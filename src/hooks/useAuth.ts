@@ -12,20 +12,30 @@ export function useAuth() {
   async (email: string, password: string) => {
     try {
       const fakeUser = {
-        id: 1,
+        id: "1",
         prenom: "Demo",
         nom: "User",
         email,
         role: "ADMIN" as UserRole,
+        permissions: [], // permissions vides pour ADMIN
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+        avatar: undefined,
+        departementId: undefined,
+        employeId: undefined,
       };
-      const fakeToken = "demo-token";
+      const fakeToken = "demo-token-" + Date.now();
 
+      // 1. Stocker dans le state Zustand (persiste automatiquement au localStorage)
       setAuth(fakeUser, fakeToken);
 
-      // Pose un cookie factice pour que le middleware le voie
-      document.cookie = `rh_token=${fakeToken}; path=/;`;
+      // 2. Créer le cookie HTTP pour le middleware
+      document.cookie = `rh_token=${fakeToken}; path=/; max-age=86400;`;
 
+      // 3. Feedback utilisateur
       toast.success(`Bienvenue, ${fakeUser.prenom} !`);
+      
+      // 4. Redirection
       router.replace("/dashboard");
 
       return { success: true, data: { user: fakeUser, token: fakeToken } };
@@ -38,8 +48,21 @@ export function useAuth() {
 );
 
   const logout = useCallback(async () => {
+    // 1. Supprimer le token du cookie
+    document.cookie = "rh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+    
+    // 2. Supprimer le localStorage (Zustand persiste sous 'rh-auth')
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("rh-auth");
+      window.localStorage.removeItem("rh_token");
+      window.localStorage.removeItem("rh_user");
+    }
+    
+    // 3. Nettoyer le store Zustand
     clearAuth();
-    router.push("/auth/login");
+    
+    // 4. Rediriger vers login
+    router.replace("/auth/login");
     toast.success("Déconnecté avec succès");
   }, [clearAuth, router]);
 

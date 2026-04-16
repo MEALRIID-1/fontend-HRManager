@@ -38,9 +38,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel — branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 bg-gradient-navy overflow-hidden">
+    <div className="min-h-screen relative flex items-center justify-center px-4 py-16 bg-slate-100/80 backdrop-blur-2xl bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.18),transparent_28%)] overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-20 top-10 h-60 w-60 rounded-full bg-blue-300/55 blur-xl animate-pulse" />
+        <div className="absolute right-10 top-24 h-44 w-44 rounded-full bg-white/60 blur-xl animate-pulse" />
+        <div className="absolute left-1/2 bottom-8 h-72 w-72 -translate-x-1/2 rounded-full bg-sky-300/45 blur-xl animate-pulse" />
+      </div>
+      <div className="w-full max-w-[1200px] flex rounded-[2rem] bg-white/70 border border-white/40 shadow-[0_35px_120px_-30px_rgba(15,23,42,0.35)] backdrop-blur-3xl overflow-hidden">
+        {/* Left panel — branding */}
+        <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between py-16 px-12 bg-gradient-navy overflow-hidden">
         {/* Background mesh */}
         <div className="absolute inset-0 bg-mesh-blue opacity-40" />
 
@@ -97,8 +103,8 @@ export default function LoginPage() {
       </div>
 
       {/* Right panel — form */}
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 bg-surface-50">
-        <div className="w-full max-w-sm">
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 bg-transparent">
+        <div className="w-full max-w-sm rounded-[2rem] bg-white/95 border border-slate-200/60 shadow-[0_45px_90px_-30px_rgba(15,23,42,0.32),0_20px_60px_-20px_rgba(15,23,42,0.18)] backdrop-blur-2xl p-10">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600">
@@ -162,24 +168,10 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Demo credentials hint */}
-          <div className="mt-6 p-4 rounded-xl bg-primary-50 border border-primary-100">
-            <p className="text-xs font-semibold text-primary-700 mb-2">Comptes de démonstration</p>
-            <div className="space-y-1">
-              {[
-                { role: "Admin",   email: "admin@rh.cm" },
-                { role: "RH",      email: "rh@rh.cm" },
-                { role: "Manager", email: "manager@rh.cm" },
-              ].map((cred) => (
-                <div key={cred.role} className="flex items-center justify-between text-xs text-primary-600">
-                  <span className="font-medium">{cred.role}</span>
-                  <span className="font-mono">{cred.email} / password</span>
-                </div>
-              ))}
-            </div>
-          </div>
+         
         </div>
       </div>
     </div>
+  </div>
   );
 }
