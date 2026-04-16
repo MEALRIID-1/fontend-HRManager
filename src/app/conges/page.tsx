@@ -123,6 +123,8 @@ export default function CongesPage() {
   const [search, setSearch] = useState("");
   const [statutFilter, setStatutFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [refusMotif, setRefusMotif] = useState<Record<string, string>>({});
+  const [expandedRefus, setExpandedRefus] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const t = setTimeout(() => { setConges(MOCK_CONGES); setLoading(false); }, 600);
@@ -233,8 +235,7 @@ export default function CongesPage() {
           : filtered.map((conge) => (
             <div
               key={conge.id}
-              className="bg-white rounded-2xl border border-slate-100 shadow-card p-5 hover:shadow-card-md transition-all cursor-pointer group"
-              onClick={() => router.push(`/conges/${conge.id}`)}
+              className="bg-white rounded-2xl border border-slate-100 shadow-card p-5 hover:shadow-card-md transition-all"
             >
               <div className="flex items-start gap-4">
                 <Avatar nom={conge.employe?.nom} prenom={conge.employe?.prenom} size="md" />
@@ -269,13 +270,77 @@ export default function CongesPage() {
                       <WorkflowProgress workflow={conge.workflow} />
                     </div>
 
-                    <ChevronRight
-                      size={16}
-                      className="text-slate-300 group-hover:text-primary-500 transition-colors flex-shrink-0"
-                    />
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Handle accept logic here
+                          console.log('Accept', conge.id);
+                        }}
+                      >
+                        Accepter
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedRefus(prev => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(conge.id)) {
+                              newSet.delete(conge.id);
+                            } else {
+                              newSet.add(conge.id);
+                            }
+                            return newSet;
+                          });
+                        }}
+                      >
+                        Refuser
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {/* Refus motif section */}
+              {expandedRefus.has(conge.id) && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <label className="block text-sm font-medium text-red-800 mb-2">
+                    MOTIF DE REFUS REQUIS
+                  </label>
+                  <textarea
+                    className="w-full p-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                    rows={3}
+                    placeholder="Veuillez indiquer le motif du refus..."
+                    value={refusMotif[conge.id] || ''}
+                    onChange={(e) => setRefusMotif(prev => ({ ...prev, [conge.id]: e.target.value }))}
+                  />
+                  <div className="flex justify-center mt-3">
+                    <Button
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle refus submit logic here
+                        console.log('Refus motif:', refusMotif[conge.id]);
+                        setExpandedRefus(prev => {
+                          const newSet = new Set(prev);
+                          newSet.delete(conge.id);
+                          return newSet;
+                        });
+                      }}
+                    >
+                      Confirmer le refus définitif
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ))
         }
