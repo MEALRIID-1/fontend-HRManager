@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   UserPlus, Search, Filter, Download, MoreVertical,
@@ -9,9 +9,10 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Card, Badge, Avatar, Button, Input, Select, Skeleton, EmptyState,
 } from "@/components/ui";
+import AddEmployeeModal from "@/components/employes/AddEmployeeModal";
 import {
   cn, formatDate, STATUT_EMPLOYE_LABELS, getStatutEmployeVariant,
-  TYPE_CONTRAT_LABELS, ROLE_LABELS,
+  TYPE_CONTRAT_LABELS,
 } from "@/lib/utils";
 import type { Employe, StatutEmploye, TypeContrat } from "@/types";
 
@@ -23,7 +24,7 @@ const MOCK_EMPLOYES: Employe[] = Array.from({ length: 12 }, (_, i) => ({
   prenom: ["Jean","Marie","Paul","Sophie","Alice","Lucas","Emma","Thomas","Léa","Nicolas","Julie","Antoine"][i],
   email: `employe${i + 1}@rh.cm`,
   emailPro: `employe${i + 1}@entreprise.cm`,
-  telephone: `+237 6${Math.floor(Math.random() * 9 + 1)}${Math.floor(Math.random() * 9000000 + 1000000)}`,
+  telephone: `+237 6${(i + 1).toString().padStart(2, "0")}${(500000 + i * 80000).toString().padStart(7, "0")}`,
   genre: i % 3 === 0 ? "FEMININ" : "MASCULIN",
   dateNaissance: "1990-01-01",
   nationalite: "Camerounaise",
@@ -51,11 +52,32 @@ export default function EmployesPage() {
   const [statutFilter, setStatutFilter] = useState("");
   const [contratFilter, setContratFilter] = useState("");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => { setEmployes(MOCK_EMPLOYES); setLoading(false); }, 600);
     return () => clearTimeout(t);
   }, []);
+
+  const handleAddEmployee = async (data: Partial<Employe>) => {
+    try {
+      // Simuler un appel API
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const newEmployee: Employe = {
+        ...data,
+        id: `e${employes.length + 1}`,
+        matricule: `EMP${String(employes.length + 1).padStart(3, "0")}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      } as Employe;
+      
+      setEmployes([...employes, newEmployee]);
+      console.log("Employé créé avec succès:", newEmployee);
+    } catch (error) {
+      console.error("Erreur lors de la création de l'employé:", error);
+    }
+  };
 
   useEffect(() => {
     let res = employes;
@@ -79,7 +101,7 @@ export default function EmployesPage() {
       title="Employés"
       subtitle={`${employes.length} employé(s) au total`}
       actions={
-        <Button icon={<UserPlus size={16} />} onClick={() => router.push("/employes/nouveau")}>
+        <Button icon={<UserPlus size={16} />} onClick={() => setShowAddModal(true)}>
           Nouvel employé
         </Button>
       }
@@ -238,6 +260,13 @@ export default function EmployesPage() {
           </div>
         )}
       </Card>
+
+      {/* Modale d'ajout d'employé */}
+      <AddEmployeeModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddEmployee}
+      />
     </DashboardLayout>
   );
 }
