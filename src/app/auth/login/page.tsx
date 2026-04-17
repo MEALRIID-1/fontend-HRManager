@@ -41,7 +41,10 @@ export default function LoginPage() {
     <div className="min-h-screen relative flex items-center justify-center px-4 py-16 bg-slate-100/80 backdrop-blur-2xl bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.18),transparent_28%)] overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-20 top-10 h-60 w-60 rounded-full bg-blue-300/55 blur-xl animate-pulse" />
-        <div className="absolute right-10 top-24 h-44 w-44 rounded-full bg-white/60 blur-xl animate-pulse" />
+        <div className="absolute right-10 top-24 h-44 w-44 rounded-full bg-blue-300/55 blur-xl animate-pulse" />
+        <div className="absolute right-10 top-24 h-80 w-80 rounded-full bg-blue-300/55 blur-xl animate-pulse" />
+        <div className="absolute right-10 top-24 h-20 w-20 rounded-full bg-blue-300/55 blur-xl animate-pulse" />
+        <div className="absolute right-10 top-24 h-30 w-30 rounded-full bg-blue-300/55 blur-xl animate-pulse" />
         <div className="absolute left-1/2 bottom-8 h-72 w-72 -translate-x-1/2 rounded-full bg-sky-300/45 blur-xl animate-pulse" />
       </div>
       <div className="w-full max-w-[1200px] flex rounded-[2rem] bg-white/70 border border-white/40 shadow-[0_35px_120px_-30px_rgba(15,23,42,0.35)] backdrop-blur-3xl overflow-hidden">
