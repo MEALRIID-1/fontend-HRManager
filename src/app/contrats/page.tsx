@@ -17,7 +17,7 @@ import type { Contrat, StatutContrat, TypeContrat } from "@/types";
 const MOCK_CONTRATS: Contrat[] = [
   {
     id: "ct1", reference: "CTR-2024-001", employeId: "e1",
-    employe: { nom: "Dupont", prenom: "Jean", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2022-01-15", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 450000, congesRestants: { annuels: 18, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP001" },
+    employe: { id: "e1", nom: "Dupont", prenom: "Jean", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2022-01-15", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 450000, congesRestants: { annuels: 18, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP001" },
     type: "CDI", statut: "SIGNE", dateDebut: "2022-01-15",
     posteId: "p1", poste: { id: "p1", intitule: "Développeur Senior", code: "P001", departementId: "d1", niveauHierarchique: 3 },
     departementId: "d1",
@@ -27,7 +27,7 @@ const MOCK_CONTRATS: Contrat[] = [
   },
   {
     id: "ct2", reference: "CTR-2024-002", employeId: "e2",
-    employe: { nom: "Martin", prenom: "Marie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2023-06-01", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 280000, congesRestants: { annuels: 12, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP002" },
+    employe: { id: "e2", nom: "Martin", prenom: "Marie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2023-06-01", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 280000, congesRestants: { annuels: 12, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP002" },
     type: "CDD", statut: "EN_COURS",
     dateDebut: "2023-06-01", dateFin: new Date(Date.now() + 1000 * 60 * 60 * 24 * 20).toISOString().split("T")[0],
     posteId: "p2", poste: { id: "p2", intitule: "Responsable RH", code: "P002", departementId: "d2", niveauHierarchique: 4 },
@@ -38,7 +38,7 @@ const MOCK_CONTRATS: Contrat[] = [
   },
   {
     id: "ct3", reference: "CTR-2024-003", employeId: "e3",
-    employe: { nom: "Bernard", prenom: "Paul", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2024-01-10", posteId: "", departementId: "", typeContrat: "STAGE", salaireBase: 120000, congesRestants: { annuels: 5, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP003" },
+    employe: { id: "e3", nom: "Bernard", prenom: "Paul", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2024-01-10", posteId: "", departementId: "", typeContrat: "STAGE", salaireBase: 120000, congesRestants: { annuels: 5, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP003" },
     type: "STAGE", statut: "EN_COURS",
     dateDebut: "2024-01-10", dateFin: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString().split("T")[0],
     posteId: "p3", poste: { id: "p3", intitule: "Stagiaire Informatique", code: "P003", departementId: "d1", niveauHierarchique: 1 },
@@ -49,7 +49,7 @@ const MOCK_CONTRATS: Contrat[] = [
   },
   {
     id: "ct4", reference: "CTR-2023-045", employeId: "e4",
-    employe: { nom: "Leroy", prenom: "Sophie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "INACTIF", dateEmbauche: "2021-03-01", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 200000, congesRestants: { annuels: 0, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP004" },
+    employe: { id: "e4", nom: "Leroy", prenom: "Sophie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "INACTIF", dateEmbauche: "2021-03-01", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 200000, congesRestants: { annuels: 0, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP004" },
     type: "CDD", statut: "EXPIRE",
     dateDebut: "2021-03-01", dateFin: "2023-12-31",
     posteId: "p4", poste: { id: "p4", intitule: "Commerciale", code: "P004", departementId: "d3", niveauHierarchique: 2 },

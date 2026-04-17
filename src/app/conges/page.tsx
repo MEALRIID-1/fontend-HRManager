@@ -17,7 +17,7 @@ import type { DemandeConge, StatutConge, TypeConge } from "@/types";
 const MOCK_CONGES: DemandeConge[] = [
   {
     id: "cg1", employeId: "e1",
-    employe: { nom: "Dupont", prenom: "Jean", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 0, congesRestants: { annuels: 18, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP001" },
+    employe: { id: "e1", nom: "Dupont", prenom: "Jean", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 0, congesRestants: { annuels: 18, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP001" },
     type: "ANNUEL", statut: "EN_ATTENTE_N1",
     dateDebut: "2024-07-20", dateFin: "2024-07-25", nombreJours: 6,
     motif: "Vacances d'été en famille",
@@ -33,7 +33,7 @@ const MOCK_CONGES: DemandeConge[] = [
   },
   {
     id: "cg2", employeId: "e2",
-    employe: { nom: "Martin", prenom: "Marie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 0, congesRestants: { annuels: 12, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP002" },
+    employe: { id: "e2", nom: "Martin", prenom: "Marie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 0, congesRestants: { annuels: 12, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP002" },
     type: "MALADIE", statut: "APPROUVE_N2",
     dateDebut: "2024-07-15", dateFin: "2024-07-17", nombreJours: 3,
     motif: "Arrêt médical prescrit",
@@ -49,7 +49,7 @@ const MOCK_CONGES: DemandeConge[] = [
   },
   {
     id: "cg3", employeId: "e3",
-    employe: { nom: "Bernard", prenom: "Paul", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 0, congesRestants: { annuels: 20, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP003" },
+    employe: { id: "e3", nom: "Bernard", prenom: "Paul", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 0, congesRestants: { annuels: 20, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP003" },
     type: "ANNUEL", statut: "APPROUVE_N3",
     dateDebut: "2024-08-01", dateFin: "2024-08-10", nombreJours: 10,
     motif: "Congés d'été",
@@ -65,7 +65,7 @@ const MOCK_CONGES: DemandeConge[] = [
   },
   {
     id: "cg4", employeId: "e4",
-    employe: { nom: "Leroy", prenom: "Sophie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 0, congesRestants: { annuels: 5, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP004" },
+    employe: { id: "e4", nom: "Leroy", prenom: "Sophie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 0, congesRestants: { annuels: 5, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP004" },
     type: "EXCEPTIONNEL", statut: "REFUSE_N1",
     dateDebut: "2024-07-18", dateFin: "2024-07-18", nombreJours: 1,
     motif: "Motif personnel",
