@@ -1,19 +1,20 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  UserPlus, Search, Filter, Download, MoreVertical,
-  Mail, Phone, Edit, Trash2, Eye,
-} from "lucide-react";
+
+import { UserPlus, Download } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import {
-  Card, Badge, Avatar, Button, Input, Select, Skeleton, EmptyState,
-} from "@/components/ui";
+import { Button } from "@/components/ui";
 import AddEmployeeModal from "@/components/employes/AddEmployeeModal";
-import {
-  cn, formatDate, STATUT_EMPLOYE_LABELS, getStatutEmployeVariant,
-  TYPE_CONTRAT_LABELS,
-} from "@/lib/utils";
+import ViewEmployeeModal from "@/components/employes/ViewEmployeeModal";
+import EditEmployeeModal from "@/components/employes/EditEmployeeModal";
+import DeleteEmployeeModal from "@/components/employes/DeleteEmployeeModal";
+import { EmployeesTable } from "@/components/employes/EmployeesTable";
+import { ToastsUI } from "@/components/employes/ToastsUI";
+import { STATUT_EMPLOYE_LABELS, TYPE_CONTRAT_LABELS } from "@/lib/utils";
+import { useUIStore } from "@/store/ui.store";
+import { useToastStore } from "@/store/toast.store";
+import "@/styles/employees-liquid-glass.css";
+import "@/styles/liquid-glass.css";
 import type { Employe, StatutEmploye, TypeContrat } from "@/types";
 
 // ── Mock employees ────────────────────────────────────────────────────────────
@@ -44,15 +45,19 @@ const MOCK_EMPLOYES: Employe[] = Array.from({ length: 12 }, (_, i) => ({
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function EmployesPage() {
-  const router = useRouter();
+  
+  const { openEmployeeModal } = useUIStore();
+  const { addToast } = useToastStore();
+
   const [employes, setEmployes] = useState<Employe[]>([]);
   const [filtered, setFiltered] = useState<Employe[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statutFilter, setStatutFilter] = useState("");
   const [contratFilter, setContratFilter] = useState("");
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employe | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => { setEmployes(MOCK_EMPLOYES); setLoading(false); }, 600);
@@ -61,9 +66,7 @@ export default function EmployesPage() {
 
   const handleAddEmployee = async (data: Partial<Employe>) => {
     try {
-      // Simuler un appel API
       await new Promise(resolve => setTimeout(resolve, 500));
-      
       const newEmployee: Employe = {
         ...data,
         id: `e${employes.length + 1}`,
@@ -71,11 +74,59 @@ export default function EmployesPage() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       } as Employe;
-      
       setEmployes([...employes, newEmployee]);
-      console.log("Employé créé avec succès:", newEmployee);
+      addToast("add");
     } catch (error) {
-      console.error("Erreur lors de la création de l'employé:", error);
+      console.error("Erreur lors de la création:", error);
+    }
+  };
+
+  // ── Handlers for employee modals ────────────────────────────────────────────
+  const handleViewEmployee = (emp: Employe) => {
+    setSelectedEmployee(emp);
+    openEmployeeModal("view", emp.id);
+    addToast("view");
+  };
+
+  const handleEditEmployee = (emp: Employe) => {
+    setSelectedEmployee(emp);
+    openEmployeeModal("edit", emp.id);
+  };
+
+  const handleDeleteEmployee = (emp: Employe) => {
+    setSelectedEmployee(emp);
+    openEmployeeModal("delete", emp.id);
+  };
+
+  const handleEditSubmit = async (data: Partial<Employe>) => {
+    if (!selectedEmployee) return;
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const updatedEmployes = employes.map(emp =>
+        emp.id === selectedEmployee.id
+          ? { ...emp, ...data, updatedAt: new Date().toISOString() }
+          : emp
+      );
+      setEmployes(updatedEmployes);
+      addToast("edit");
+    } catch (error) {
+      console.error("Erreur lors de la modification:", error);
+      addToast("error");
+    }
+  };
+
+  const handleConfirmDelete = async (employeeId: string) => {
+    try {
+      setDeletingId(employeeId);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const updatedEmployes = employes.filter(emp => emp.id !== employeeId);
+      setEmployes(updatedEmployes);
+      setDeletingId(null);
+      addToast("delete");
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+      setDeletingId(null);
+      addToast("error");
     }
   };
 
@@ -97,176 +148,121 @@ export default function EmployesPage() {
   }, [employes, search, statutFilter, contratFilter]);
 
   return (
-    <DashboardLayout
-      title="Employés"
-      subtitle={`${employes.length} employé(s) au total`}
-      actions={
-        <Button icon={<UserPlus size={16} />} onClick={() => setShowAddModal(true)}>
-          Nouvel employé
-        </Button>
-      }
-    >
-      {/* Filters */}
-      <Card className="mb-5">
-        <div className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[200px]">
-            <Input
-              placeholder="Rechercher par nom, matricule…"
-              icon={<Search size={15} />}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="w-44">
-            <Select
-              options={Object.entries(STATUT_EMPLOYE_LABELS).map(([v, l]) => ({ value: v, label: l }))}
-              placeholder="Tous les statuts"
-              value={statutFilter}
-              onChange={(e) => setStatutFilter(e.target.value)}
-            />
-          </div>
-          <div className="w-44">
-            <Select
-              options={Object.entries(TYPE_CONTRAT_LABELS).map(([v, l]) => ({ value: v, label: l }))}
-              placeholder="Tous contrats"
-              value={contratFilter}
-              onChange={(e) => setContratFilter(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" icon={<Filter size={14} />}>Filtrer</Button>
-          <Button variant="outline" icon={<Download size={14} />}>Exporter</Button>
-        </div>
-      </Card>
+    <>
+      {/* Aurora Background */}
+      <div className="aurora-background">
+        <div className="blob-1 animate-aurora-blob-1" />
+        <div className="blob-2 animate-aurora-blob-2" />
+        <div className="blob-3 animate-aurora-blob-3" />
+        <div className="blob-4 animate-aurora-blob-4" />
+      </div>
 
-      {/* Table */}
-      <Card padding="none">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100">
-                {["Employé","Matricule","Poste","Département","Contrat","Statut","Embauché le",""].map((h) => (
-                  <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold text-muted uppercase tracking-wider whitespace-nowrap">
-                    {h}
-                  </th>
+      {/* Main Content */}
+      <DashboardLayout
+        title="Employés"
+        subtitle={`${employes.length} employé(s) enregistrés`}
+        actions={
+          <Button icon={<UserPlus size={16} />} onClick={() => setShowAddModal(true)}>
+            Nouvel employé
+          </Button>
+        }
+      >
+        {/* Search & Filters */}
+        <div className="glass-container p-6 mb-6">
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="flex-1 min-w-[200px]">
+              <label className="uppercase-label text-gray-400 mb-2 block">Rechercher</label>
+              <input
+                type="text"
+                placeholder="Nom, matricule, email..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  backdropFilter: "blur(8px)",
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(34, 211, 238, 0.3)",
+                }}
+                className="glass-input"
+              />
+            </div>
+            <div className="w-48">
+              <label className="uppercase-label text-gray-400 mb-2 block">Statut</label>
+              <select
+                value={statutFilter}
+                onChange={(e) => setStatutFilter(e.target.value)}
+                style={{
+                  backdropFilter: "blur(8px)",
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(34, 211, 238, 0.3)",
+                }}
+                className="glass-input"
+              >
+                <option value="">Tous les statuts</option>
+                {Object.entries(STATUT_EMPLOYE_LABELS).map(([v, l]) => (
+                  <option key={v} value={v}>{l}</option>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading
-                ? Array.from({ length: 8 }).map((_, i) => (
-                    <tr key={i} className="border-b border-slate-50">
-                      {Array.from({ length: 8 }).map((_, j) => (
-                        <td key={j} className="px-5 py-3.5">
-                          <Skeleton className="h-4 w-full max-w-[120px]" />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                : filtered.length === 0
-                ? (
-                  <tr>
-                    <td colSpan={8}>
-                      <EmptyState
-                        icon={<Search size={24} />}
-                        title="Aucun employé trouvé"
-                        description="Essayez de modifier vos critères de recherche"
-                      />
-                    </td>
-                  </tr>
-                )
-                : filtered.map((emp) => (
-                  <tr key={emp.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors group">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <Avatar nom={emp.nom} prenom={emp.prenom} size="sm" />
-                        <div>
-                          <p className="font-medium text-slate-800">{emp.prenom} {emp.nom}</p>
-                          <p className="text-xs text-muted flex items-center gap-1">
-                            <Mail size={11} />{emp.email}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg">
-                        {emp.matricule}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-600">{emp.poste?.intitule}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{emp.departement?.nom}</td>
-                    <td className="px-5 py-3.5">
-                      <Badge variant="blue" size="sm">{TYPE_CONTRAT_LABELS[emp.typeContrat]}</Badge>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <Badge variant={getStatutEmployeVariant(emp.statut)} size="sm" dot>
-                        {STATUT_EMPLOYE_LABELS[emp.statut]}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
-                      {formatDate(emp.dateEmbauche)}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => router.push(`/employes/${emp.id}`)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                          title="Voir"
-                        >
-                          <Eye size={15} />
-                        </button>
-                        <button
-                          onClick={() => router.push(`/employes/${emp.id}/modifier`)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit size={15} />
-                        </button>
-                        <button
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-danger hover:bg-danger-light transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              }
-            </tbody>
-          </table>
+              </select>
+            </div>
+            <div className="w-48">
+              <label className="uppercase-label text-gray-400 mb-2 block">Contrat</label>
+              <select
+                value={contratFilter}
+                onChange={(e) => setContratFilter(e.target.value)}
+                style={{
+                  backdropFilter: "blur(8px)",
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(34, 211, 238, 0.3)",
+                }}
+                className="glass-input"
+              >
+                <option value="">Tous les contrats</option>
+                {Object.entries(TYPE_CONTRAT_LABELS).map(([v, l]) => (
+                  <option key={v} value={v}>{l}</option>
+                ))}
+              </select>
+            </div>
+            <Button variant="outline" icon={<Download size={14} />}>Exporter</Button>
+          </div>
         </div>
 
-        {/* Pagination */}
-        {!loading && filtered.length > 0 && (
-          <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100">
-            <p className="text-sm text-muted">
-              Affichage de <span className="font-medium text-slate-700">{filtered.length}</span> employé(s)
-            </p>
-            <div className="flex gap-1">
-              {[1, 2, 3].map((page) => (
-                <button
-                  key={page}
-                  className={cn(
-                    "h-8 w-8 rounded-lg text-sm font-medium transition-colors",
-                    page === 1
-                      ? "bg-primary-600 text-white"
-                      : "text-slate-600 hover:bg-slate-100"
-                  )}
-                >
-                  {page}
-                </button>
-              ))}
+        {/* Employees Table */}
+        {loading ? (
+          <div className="glass-container p-12">
+            <div className="animate-pulse text-center text-gray-400">
+              Chargement des employés...
             </div>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="glass-container p-12">
+            <div className="text-center text-gray-400">
+              <div style={{ fontSize: "48px", marginBottom: "12px" }}>📭</div>
+              <p>Aucun employé trouvé</p>
+              <p style={{ fontSize: "14px", marginTop: "8px" }}>Essayez de modifier vos critères de recherche</p>
+            </div>
+          </div>
+        ) : (
+          <EmployeesTable
+            employees={filtered}
+            onView={handleViewEmployee}
+            onEdit={handleEditEmployee}
+            onDelete={handleDeleteEmployee}
+            deletingId={deletingId}
+          />
         )}
-      </Card>
+      </DashboardLayout>
 
-      {/* Modale d'ajout d'employé */}
+      {/* Modals */}
       <AddEmployeeModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddEmployee}
       />
-    </DashboardLayout>
+      <ViewEmployeeModal employee={selectedEmployee} onClose={() => setSelectedEmployee(null)} />
+      <EditEmployeeModal employee={selectedEmployee} onSubmit={handleEditSubmit} onClose={() => setSelectedEmployee(null)} />
+      <DeleteEmployeeModal employee={selectedEmployee} onConfirm={handleConfirmDelete} />
+
+      {/* Toasts */}
+      <ToastsUI />
+    </>
   );
 }

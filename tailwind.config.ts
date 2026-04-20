@@ -84,6 +84,8 @@ const config: Config = {
         "scale-in": "scaleIn 0.2s ease-out",
         "pulse-soft": "pulseSoft 2s ease-in-out infinite",
         "shimmer": "shimmer 1.5s infinite",
+        "modal-in": "modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "modal-backdrop-in": "modalBackdropIn 0.3s ease-out",
       },
       keyframes: {
         fadeIn: {
@@ -109,6 +111,14 @@ const config: Config = {
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
+        },
+        modalIn: {
+          "0%": { opacity: "0", transform: "scale(0.95) translateY(10px)" },
+          "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
+        modalBackdropIn: {
+          "0%": { opacity: "0", backdropFilter: "blur(0px)" },
+          "100%": { opacity: "1", backdropFilter: "blur(12px)" },
         },
       },
     },
