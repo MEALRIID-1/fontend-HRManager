@@ -1,19 +1,22 @@
 "use client";
 import React, { useEffect, useState } from "react";
 
-import { UserPlus, Download } from "lucide-react";
+import { UserPlus, Search, Filter, Download, Eye, Edit, Trash2, Mail } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Card, Badge, Avatar, Button, Input, Select, Skeleton, EmptyState,
 } from "@/components/ui";
 import AddEmployeeModal from "@/components/employes/AddEmployeeModal";
+import EmployeeDetailsModal from "@/components/employes/EmployeeDetailsModal";
+import EmployeeModal from "@/components/employes/AddEmployeeModal";
+import { useToastStore } from "@/store/toast.store";
 import {
   cn, formatDate, STATUT_EMPLOYE_LABELS, getStatutEmployeVariant,
   TYPE_CONTRAT_LABELS,
 } from "@/lib/utils";
 import type { Employe, StatutEmploye, TypeContrat } from "@/types";
 
-// ── Mock employees ────────────────────────────────────────────────────────────
+// ── Mock employees ─────────────────────────────────────────────────────────
 const MOCK_EMPLOYES: Employe[] = Array.from({ length: 12 }, (_, i) => ({
   id: `e${i + 1}`,
   matricule: `EMP${String(i + 1).padStart(3, "0")}`,
@@ -40,10 +43,8 @@ const MOCK_EMPLOYES: Employe[] = Array.from({ length: 12 }, (_, i) => ({
   updatedAt: "2024-06-01",
 }));
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── Component ──────────────────────────────────────────────────────────────
 export default function EmployesPage() {
-  
-  const { openEmployeeModal } = useUIStore();
   const { addToast } = useToastStore();
 
   const [employes, setEmployes] = useState<Employe[]>([]);
@@ -53,6 +54,12 @@ export default function EmployesPage() {
   const [statutFilter, setStatutFilter] = useState("");
   const [contratFilter, setContratFilter] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // ── États manquants (cause de l'erreur de compilation) ──────────────────
+  const [selectedEmployee, setSelectedEmployee] = useState<Employe | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employe | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => { setEmployes(MOCK_EMPLOYES); setLoading(false); }, 600);
@@ -69,78 +76,38 @@ export default function EmployesPage() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       } as Employe;
-      setEmployes([...employes, newEmployee]);
-      addToast("add");
+      setEmployes(prev => [...prev, newEmployee]);
+      addToast({ type: "success", message: "Employé ajouté avec succès" });
     } catch (error) {
       console.error("Erreur lors de la création:", error);
+      addToast({ type: "error", message: "Erreur lors de la création de l'employé" });
     }
   };
 
-  // ── Handlers for employee modals ────────────────────────────────────────────
-  const handleViewEmployee = (emp: Employe) => {
-    setSelectedEmployee(emp);
-    openEmployeeModal("view", emp.id);
-    addToast("view");
-  };
-
-  const handleEditEmployee = (emp: Employe) => {
-    setSelectedEmployee(emp);
-    openEmployeeModal("edit", emp.id);
-  };
-
-  const handleDeleteEmployee = (emp: Employe) => {
-    setSelectedEmployee(emp);
-    openEmployeeModal("delete", emp.id);
-  };
-
-  const handleEditSubmit = async (data: Partial<Employe>) => {
-    if (!selectedEmployee) return;
+  // ── Handler de modification manquant ───────────────────────────────────
+  const handleEditEmployee = async (data: Partial<Employe>) => {
+    if (!editingEmployee) return;
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
-      const updatedEmployes = employes.map(emp =>
-        emp.id === selectedEmployee.id
-          ? { ...emp, ...data, updatedAt: new Date().toISOString() }
-          : emp
+      setEmployes(prev =>
+        prev.map(emp =>
+          emp.id === editingEmployee.id
+            ? { ...emp, ...data, updatedAt: new Date().toISOString() }
+            : emp
+        )
       );
-      setEmployes(updatedEmployes);
-      addToast("edit");
+      setShowEditModal(false);
+      setEditingEmployee(null);
+      addToast({ type: "success", message: "Employé modifié avec succès" });
     } catch (error) {
       console.error("Erreur lors de la modification:", error);
-      addToast("error");
+      addToast({ type: "error", message: "Erreur lors de la modification" });
     }
   };
 
-  const handleConfirmDelete = async (employeeId: string) => {
-    try {
-      setDeletingId(employeeId);
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const updatedEmployes = employes.filter(emp => emp.id !== employeeId);
-      setEmployes(updatedEmployes);
-      setDeletingId(null);
-      addToast("delete");
-    } catch (error) {
-      console.error("Erreur lors de la suppression:", error);
-      setDeletingId(null);
-      addToast("error");
-    }
-  };
-
-  const handleEditEmployee = async (data: Partial<Employe>) => {
-    try {
-      // Simuler un appel API
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const updatedEmployee: Employe = {
-        ...editingEmployee,
-        ...data,
-        updatedAt: new Date().toISOString(),
-      } as Employe;
-      
-      setEmployes(employes.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp));
-      console.log("Employé modifié avec succès:", updatedEmployee);
-    } catch (error) {
-      console.error("Erreur lors de la modification de l'employé:", error);
-    }
+  const handleDeleteEmployee = (id: string) => {
+    setEmployes(prev => prev.filter(emp => emp.id !== id));
+    addToast({ type: "success", message: "Employé supprimé" });
   };
 
   const handleViewEmployee = (employee: Employe) => {
@@ -282,20 +249,21 @@ export default function EmployesPage() {
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => router.push(`/employes/${emp.id}`)}
+                          onClick={() => handleViewEmployee(emp)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
                           title="Voir"
                         >
                           <Eye size={15} />
                         </button>
                         <button
-                          onClick={() => router.push(`/employes/${emp.id}/modifier`)}
+                          onClick={() => handleEditEmployeeClick(emp)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                           title="Modifier"
                         >
                           <Edit size={15} />
                         </button>
                         <button
+                          onClick={() => handleDeleteEmployee(emp.id)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-danger hover:bg-danger-light transition-colors"
                           title="Supprimer"
                         >
@@ -310,37 +278,51 @@ export default function EmployesPage() {
           </table>
         </div>
 
-        {/* Employees Table */}
-        {loading ? (
-          <div className="glass-container p-12">
-            <div className="animate-pulse text-center text-gray-400">
-              Chargement des employés...
+        {/* Pagination */}
+        {!loading && filtered.length > 0 && (
+          <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100">
+            <p className="text-sm text-muted">
+              Affichage de <span className="font-medium text-slate-700">{filtered.length}</span> employé(s)
+            </p>
+            <div className="flex gap-1">
+              {[1, 2, 3].map((page) => (
+                <button
+                  key={page}
+                  className={cn(
+                    "h-8 w-8 rounded-lg text-sm font-medium transition-colors",
+                    page === 1
+                      ? "bg-primary-600 text-white"
+                      : "text-slate-600 hover:bg-slate-100"
+                  )}
+                >
+                  {page}
+                </button>
+              ))}
             </div>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="glass-container p-12">
-            <div className="text-center text-gray-400">
-              <div style={{ fontSize: "48px", marginBottom: "12px" }}>📭</div>
-              <p>Aucun employé trouvé</p>
-              <p style={{ fontSize: "14px", marginTop: "8px" }}>Essayez de modifier vos critères de recherche</p>
-            </div>
-          </div>
-        ) : (
-          <EmployeesTable
-            employees={filtered}
-            onView={handleViewEmployee}
-            onEdit={handleEditEmployee}
-            onDelete={handleDeleteEmployee}
-            deletingId={deletingId}
-          />
         )}
-      </DashboardLayout>
+      </Card>
 
-      {/* Modale d'ajout d'employé */}
+      {/* Modale d'ajout */}
       <AddEmployeeModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddEmployee}
+      />
+
+      {/* Modale de détails */}
+      <EmployeeDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => { setShowDetailsModal(false); setSelectedEmployee(null); }}
+        employee={selectedEmployee}
+      />
+
+      {/* Modale de modification */}
+      <EmployeeModal
+        isOpen={showEditModal}
+        onClose={() => { setShowEditModal(false); setEditingEmployee(null); }}
+        onSubmit={handleEditEmployee}
+        employee={editingEmployee}
       />
     </DashboardLayout>
   );
