@@ -5,10 +5,11 @@ import { Button, Input } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { Employe, TypeContrat } from "@/types";
 
-interface AddEmployeeModalProps {
+interface EmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: Partial<Employe>) => void | Promise<void>;
+  employee?: Employe | null; // Pour l'édition
 }
 
 const TIPS = [
@@ -17,7 +18,8 @@ const TIPS = [
   "La date d'embauche détermine le calcul automatique des congés payés.",
 ];
 
-export default function AddEmployeeModal({ isOpen, onClose, onSubmit }: AddEmployeeModalProps) {
+export default function EmployeeModal({ isOpen, onClose, onSubmit, employee }: EmployeeModalProps) {
+  const isEditing = !!employee;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     prenom: "",
@@ -34,6 +36,42 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit }: AddEmplo
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [completedFields, setCompletedFields] = useState<string[]>([]);
+
+  // Pré-remplir le formulaire si en mode édition
+  useEffect(() => {
+    if (isEditing && employee) {
+      setFormData({
+        prenom: employee.prenom || "",
+        nom: employee.nom || "",
+        emailPro: employee.emailPro || "",
+        telephone: employee.telephone || "",
+        iban: employee.rib || "",
+        posteId: employee.posteId || "",
+        departementId: employee.departementId || "",
+        dateEmbauche: employee.dateEmbauche || "",
+        typeContrat: employee.typeContrat || "CDI",
+        salaireBase: employee.salaireBase?.toString() || "",
+      });
+      // Marquer tous les champs comme complétés pour l'édition
+      setCompletedFields(["prenom", "nom", "emailPro", "telephone", "posteId", "departementId", "dateEmbauche", "salaireBase"]);
+    } else {
+      // Reset pour ajout
+      setFormData({
+        prenom: "",
+        nom: "",
+        emailPro: "",
+        telephone: "",
+        iban: "",
+        posteId: "",
+        departementId: "",
+        dateEmbauche: "",
+        typeContrat: "CDI",
+        salaireBase: "",
+      });
+      setCompletedFields([]);
+    }
+    setErrors({});
+  }, [isEditing, employee, isOpen]);
 
   // Bloquer le scroll du body quand la modale est ouverte
   useEffect(() => {
@@ -84,6 +122,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit }: AddEmplo
         await new Promise(resolve => setTimeout(resolve, 500)); // Simulation API
         
         const submitData: Partial<Employe> = {
+          ...(isEditing && { id: employee.id }),
           nom: formData.nom,
           prenom: formData.prenom,
           emailPro: formData.emailPro,
@@ -142,9 +181,9 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit }: AddEmplo
           {/* Header */}
           <div className="flex items-start justify-between p-8 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
             <div className="flex-1">
-              <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">EMPLOYÉS / NOUVEL EMPLOYÉ</p>
-              <h1 className="text-3xl font-bold text-slate-900 mb-2">Ajouter un collaborateur</h1>
-              <p className="text-slate-600">Complétez les informations pour intégrer un nouveau membre à l'équipe.</p>
+              <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">EMPLOYÉS / {isEditing ? "MODIFIER" : "NOUVEL EMPLOYÉ"}</p>
+              <h1 className="text-3xl font-bold text-slate-900 mb-2">{isEditing ? "Modifier un collaborateur" : "Ajouter un collaborateur"}</h1>
+              <p className="text-slate-600">{isEditing ? "Mettez à jour les informations du collaborateur." : "Complétez les informations pour intégrer un nouveau membre à l'équipe."}</p>
             </div>
             <button
               onClick={onClose}
@@ -416,10 +455,10 @@ export default function AddEmployeeModal({ isOpen, onClose, onSubmit }: AddEmplo
               {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Enregistrement...
+                  {isEditing ? "Modification..." : "Enregistrement..."}
                 </div>
               ) : (
-                "Enregistrer l'employé"
+                isEditing ? "Modifier l'employé" : "Enregistrer l'employé"
               )}
             </Button>
           </div>

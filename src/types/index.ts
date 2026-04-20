@@ -115,6 +115,15 @@ export interface CongesSolde {
   exceptionnels: number;
 }
 
+// ----- DOCUMENT -----
+export interface Document {
+  id: string;
+  nom: string;
+  type: string;
+  url?: string;
+  createdAt: string;
+}
+
 // ----- CONGÉS -----
 export type TypeConge =
   | "ANNUEL"

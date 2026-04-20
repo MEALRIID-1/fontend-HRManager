@@ -1,4 +1,5 @@
 import { apiGet, apiPost, apiPut, apiDelete, apiPatch } from "@/lib/api";
+import { employeService } from "./employe.service";
 import type {
   Contrat,
   Notification,
@@ -74,3 +75,5 @@ export const rapportService = {
   exporterRapport: (type: string, format: "pdf" | "excel", params?: object) =>
     apiGet<Blob>(`/rapports/${type}/exporter`, { format, ...params }),
 };
+
+export { employeService };

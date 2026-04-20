@@ -9,7 +9,8 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Card, Badge, Avatar, Button, Input, Select, Skeleton, EmptyState,
 } from "@/components/ui";
-import AddEmployeeModal from "@/components/employes/AddEmployeeModal";
+import EmployeeModal from "@/components/employes/AddEmployeeModal";
+import EmployeeDetailsModal from "@/components/employes/EmployeeDetailsModal";
 import {
   cn, formatDate, STATUT_EMPLOYE_LABELS, getStatutEmployeVariant,
   TYPE_CONTRAT_LABELS,
@@ -37,6 +38,7 @@ const MOCK_EMPLOYES: Employe[] = Array.from({ length: 12 }, (_, i) => ({
   departement: { id: "d1", nom: ["Informatique","Ressources Humaines","Finance","Commercial","Logistique","Direction","Marketing","Production"][i % 8], code: "D001", responsableId: "e1", nombreEmployes: 12 + i, createdAt: "" },
   typeContrat: (["CDI","CDD","CDI","STAGE","CDI","CDI","CDI","CDD","CDI","CDI","APPRENTISSAGE","CDI"] as TypeContrat[])[i],
   salaireBase: 200000 + i * 50000,
+  rib: `FR76${String(1000 + i).padStart(4, "0")}000000000000000${String(i + 1).padStart(2, "0")}`,
   congesRestants: { annuels: 18 - i % 5, maladie: 5, exceptionnels: 2 },
   createdAt: "2024-01-01",
   updatedAt: "2024-06-01",
@@ -53,6 +55,10 @@ export default function EmployesPage() {
   const [contratFilter, setContratFilter] = useState("");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employe | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employe | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => { setEmployes(MOCK_EMPLOYES); setLoading(false); }, 600);
@@ -77,6 +83,34 @@ export default function EmployesPage() {
     } catch (error) {
       console.error("Erreur lors de la création de l'employé:", error);
     }
+  };
+
+  const handleEditEmployee = async (data: Partial<Employe>) => {
+    try {
+      // Simuler un appel API
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const updatedEmployee: Employe = {
+        ...editingEmployee,
+        ...data,
+        updatedAt: new Date().toISOString(),
+      } as Employe;
+      
+      setEmployes(employes.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp));
+      console.log("Employé modifié avec succès:", updatedEmployee);
+    } catch (error) {
+      console.error("Erreur lors de la modification de l'employé:", error);
+    }
+  };
+
+  const handleViewEmployee = (employee: Employe) => {
+    setSelectedEmployee(employee);
+    setShowDetailsModal(true);
+  };
+
+  const handleEditEmployeeClick = (employee: Employe) => {
+    setEditingEmployee(employee);
+    setShowEditModal(true);
   };
 
   useEffect(() => {
@@ -208,14 +242,14 @@ export default function EmployesPage() {
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => router.push(`/employes/${emp.id}`)}
+                          onClick={() => handleViewEmployee(emp)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
                           title="Voir"
                         >
                           <Eye size={15} />
                         </button>
                         <button
-                          onClick={() => router.push(`/employes/${emp.id}/modifier`)}
+                          onClick={() => handleEditEmployeeClick(emp)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                           title="Modifier"
                         >
@@ -262,10 +296,25 @@ export default function EmployesPage() {
       </Card>
 
       {/* Modale d'ajout d'employé */}
-      <AddEmployeeModal
+      <EmployeeModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddEmployee}
+      />
+
+      {/* Modale de détails d'employé */}
+      <EmployeeDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        employee={selectedEmployee}
+      />
+
+      {/* Modale de modification d'employé */}
+      <EmployeeModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={handleEditEmployee}
+        employee={editingEmployee}
       />
     </DashboardLayout>
   );

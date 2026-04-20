@@ -7,17 +7,20 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, Badge, Avatar, Button, Input, Select, EmptyState, Skeleton } from "@/components/ui";
+import ContractPreviewModal from "@/components/contrats/ContractPreviewModal";
+import ContractFormModal from "@/components/contrats/ContractFormModal";
+import { employeService } from "@/lib/services";
 import {
   formatDate, STATUT_CONTRAT_LABELS, getStatutContratVariant,
   TYPE_CONTRAT_LABELS, formatCurrency, isExpiringSoon, cn,
 } from "@/lib/utils";
-import type { Contrat, StatutContrat, TypeContrat } from "@/types";
+import type { Contrat, StatutContrat, TypeContrat, Employe } from "@/types";
 
 // ── Mock contrats ─────────────────────────────────────────────────────────────
 const MOCK_CONTRATS: Contrat[] = [
   {
     id: "ct1", reference: "CTR-2024-001", employeId: "e1",
-    employe: { id: "e1", nom: "Dupont", prenom: "Jean", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2022-01-15", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 450000, congesRestants: { annuels: 18, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP001" },
+    employe: { id: "e1", nom: "Dupont", prenom: "Jean", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2022-01-15", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 450000, rib: "FR7612345678901234567890123", cnss: "23700123456", congesRestants: { annuels: 18, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP001" },
     type: "CDI", statut: "SIGNE", dateDebut: "2022-01-15",
     posteId: "p1", poste: { id: "p1", intitule: "Développeur Senior", code: "P001", departementId: "d1", niveauHierarchique: 3 },
     departementId: "d1",
@@ -27,7 +30,7 @@ const MOCK_CONTRATS: Contrat[] = [
   },
   {
     id: "ct2", reference: "CTR-2024-002", employeId: "e2",
-    employe: { id: "e2", nom: "Martin", prenom: "Marie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2023-06-01", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 280000, congesRestants: { annuels: 12, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP002" },
+    employe: { id: "e2", nom: "Martin", prenom: "Marie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2023-06-01", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 280000, rib: "FR7623456789012345678901234", cnss: "23700234567", congesRestants: { annuels: 12, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP002" },
     type: "CDD", statut: "EN_COURS",
     dateDebut: "2023-06-01", dateFin: new Date(Date.now() + 1000 * 60 * 60 * 24 * 20).toISOString().split("T")[0],
     posteId: "p2", poste: { id: "p2", intitule: "Responsable RH", code: "P002", departementId: "d2", niveauHierarchique: 4 },
@@ -38,7 +41,7 @@ const MOCK_CONTRATS: Contrat[] = [
   },
   {
     id: "ct3", reference: "CTR-2024-003", employeId: "e3",
-    employe: { id: "e3", nom: "Bernard", prenom: "Paul", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2024-01-10", posteId: "", departementId: "", typeContrat: "STAGE", salaireBase: 120000, congesRestants: { annuels: 5, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP003" },
+    employe: { id: "e3", nom: "Bernard", prenom: "Paul", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2024-01-10", posteId: "", departementId: "", typeContrat: "STAGE", salaireBase: 120000, rib: "FR7634567890123456789012345", cnss: "23700345678", congesRestants: { annuels: 5, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP003" },
     type: "STAGE", statut: "EN_COURS",
     dateDebut: "2024-01-10", dateFin: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString().split("T")[0],
     posteId: "p3", poste: { id: "p3", intitule: "Stagiaire Informatique", code: "P003", departementId: "d1", niveauHierarchique: 1 },
@@ -49,7 +52,7 @@ const MOCK_CONTRATS: Contrat[] = [
   },
   {
     id: "ct4", reference: "CTR-2023-045", employeId: "e4",
-    employe: { id: "e4", nom: "Leroy", prenom: "Sophie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "INACTIF", dateEmbauche: "2021-03-01", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 200000, congesRestants: { annuels: 0, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP004" },
+    employe: { id: "e4", nom: "Leroy", prenom: "Sophie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "INACTIF", dateEmbauche: "2021-03-01", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 200000, rib: "FR7645678901234567890123456", cnss: "23700456789", congesRestants: { annuels: 0, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP004" },
     type: "CDD", statut: "EXPIRE",
     dateDebut: "2021-03-01", dateFin: "2023-12-31",
     posteId: "p4", poste: { id: "p4", intitule: "Commerciale", code: "P004", departementId: "d3", niveauHierarchique: 2 },
@@ -64,15 +67,84 @@ export default function ContratsPage() {
   const router = useRouter();
   const [contrats, setContrats] = useState<Contrat[]>([]);
   const [filtered, setFiltered] = useState<Contrat[]>([]);
+  const [employees, setEmployees] = useState<Employe[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statutFilter, setStatutFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [selectedContract, setSelectedContract] = useState<Contrat | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
 
   useEffect(() => {
-    const t = setTimeout(() => { setContrats(MOCK_CONTRATS); setLoading(false); }, 600);
-    return () => clearTimeout(t);
+    const loadData = async () => {
+      try {
+        const [contratsRes, employeesRes] = await Promise.all([
+          // Simuler chargement contrats depuis API
+          Promise.resolve({ data: MOCK_CONTRATS }),
+          employeService.getAll()
+        ]);
+        setContrats(contratsRes.data);
+        setEmployees(employeesRes.data || []);
+      } catch (error) {
+        console.error("Erreur chargement données :", error);
+        setContrats(MOCK_CONTRATS);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
+
+  const handleOpenCreateModal = () => {
+    setFormMode("create");
+    setSelectedContract(null);
+    setShowFormModal(true);
+  };
+
+  const handleViewContract = (contrat: Contrat) => {
+    setSelectedContract(contrat);
+    setShowPreviewModal(true);
+  };
+
+  const handleEditContract = (contrat: Contrat) => {
+    setSelectedContract(contrat);
+    setFormMode("edit");
+    setShowFormModal(true);
+  };
+
+  const handleCreateContract = async (data: Partial<Contrat>) => {
+    // Générer une référence unique
+    const reference = `CTR-${Date.now().toString().slice(-4)}`;
+    const employee = employees.find(e => e.id === data.employeId);
+    const newContract: Contrat = {
+      id: `ct${Date.now()}`,
+      reference,
+      employeId: data.employeId!,
+      employe: employee!,
+      type: data.type!,
+      statut: data.statut || "BROUILLON",
+      dateDebut: data.dateDebut!,
+      dateFin: data.dateFin,
+      posteId: employee?.posteId || "",
+      poste: employee?.poste,
+      departementId: employee?.departementId || "",
+      salaireBase: data.salaireBase!,
+      avantages: data.avantages || [],
+      clauses: data.clauses,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setContrats([...contrats, newContract]);
+  };
+
+  const handleUpdateContract = async (data: Partial<Contrat>) => {
+    if (!selectedContract) return;
+    const updatedContract = { ...selectedContract, ...data } as Contrat;
+    setContrats(contrats.map((item) => (item.id === updatedContract.id ? updatedContract : item)));
+    setSelectedContract(null);
+  };
 
   useEffect(() => {
     let res = contrats;
@@ -97,7 +169,7 @@ export default function ContratsPage() {
       title="Contrats"
       subtitle="Gestion des contrats de travail"
       actions={
-        <Button icon={<FileSignature size={16} />} onClick={() => router.push("/contrats/nouveau")}>
+        <Button icon={<FileSignature size={16} />} onClick={handleOpenCreateModal}>
           Nouveau contrat
         </Button>
       }
@@ -232,12 +304,15 @@ export default function ContratsPage() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() => router.push(`/contrats/${contrat.id}`)}
+                            onClick={() => handleViewContract(contrat)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
                           >
                             <Eye size={15} />
                           </button>
-                          <button className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors">
+                          <button
+                            onClick={() => handleEditContract(contrat)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                          >
                             <Edit size={15} />
                           </button>
                           <button className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors">
@@ -253,6 +328,19 @@ export default function ContratsPage() {
           </table>
         </div>
       </Card>
+
+      <ContractFormModal
+        isOpen={showFormModal}
+        onClose={() => setShowFormModal(false)}
+        onSubmit={formMode === "create" ? handleCreateContract : handleUpdateContract}
+        contrat={formMode === "edit" ? selectedContract : null}
+      />
+
+      <ContractPreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        contrat={selectedContract}
+      />
     </DashboardLayout>
   );
 }
