@@ -93,15 +93,8 @@ export default function ContractFormModal({ isOpen, onClose, onSubmit, contrat }
   const loadEmployees = async () => {
     try {
       const response = await employeService.getAll();
-      const payload = response as any;
-
-      if (Array.isArray(payload)) {
-        setEmployees(payload);
-      } else if (Array.isArray(payload.data)) {
-        setEmployees(payload.data);
-      } else {
-        setEmployees(payload.data?.data || []);
-      }
+      // La réponse API a la structure: { data: { data: Employe[], meta: {...} } }
+      setEmployees(response.data?.data || []);
     } catch (error) {
       console.error("Erreur chargement employés :", error);
     }

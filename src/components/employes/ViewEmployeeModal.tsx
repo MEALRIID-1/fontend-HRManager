@@ -271,7 +271,7 @@ export default function ViewEmployeeModal({ employee, onClose }: ViewEmployeeMod
             <button
               onClick={handleClose}
               style={{
-                backdrop: "blur(8px)",
+                backdropFilter: "blur(8px)",
                 background: "rgba(255, 255, 255, 0.1)",
                 border: "1px solid rgba(255, 255, 255, 0.15)",
               }}

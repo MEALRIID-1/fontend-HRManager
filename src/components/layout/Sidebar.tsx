@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, CalendarDays, FileText, Bell,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu, Building2,
+  BarChart3, Settings, LogOut, ChevronLeft, Menu, Building2, User, Briefcase, Trash2,
 } from "lucide-react";
 import { cn, ROLE_LABELS } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,19 +17,48 @@ interface NavItem {
   icon: React.ReactNode;
   badge?: number;
   requiredPermission?: string;
+  requiredRole?: string;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Tableau de bord",  href: "/dashboard",       icon: <LayoutDashboard size={18} /> },
-  { label: "Employés",         href: "/employes",         icon: <Users size={18} />,        requiredPermission: "employes:read" },
-  { label: "Congés",           href: "/conges",           icon: <CalendarDays size={18} /> },
-  { label: "Contrats",         href: "/contrats",         icon: <FileText size={18} />,     requiredPermission: "contrats:read" },
-  { label: "Notifications",    href: "/notifications",    icon: <Bell size={18} /> },
-  { label: "Rapports",         href: "/rapports",         icon: <BarChart3 size={18} />,    requiredPermission: "rapports:read" },
+// Navigation pour DIRECTEUR/ADMIN (super admin)
+const DIRECTEUR_NAV_ITEMS: NavItem[] = [
+  { label: "Tableau de bord",  href: "/directeur/dashboard", icon: <LayoutDashboard size={18} /> },
+  { label: "Congés",           href: "/directeur/conges",    icon: <CalendarDays size={18} /> },
+  { label: "Rapports",         href: "/directeur/rapports",  icon: <BarChart3 size={18} /> },
+  { label: "Notifications",    href: "/directeur/notifications", icon: <Bell size={18} /> },
+];
+
+// Navigation pour RH
+const RH_NAV_ITEMS: NavItem[] = [
+  { label: "Tableau de bord",  href: "/rh/dashboard",      icon: <LayoutDashboard size={18} /> },
+  { label: "Employés",         href: "/rh/employes",      icon: <Users size={18} /> },
+  { label: "Contrats",         href: "/rh/contrats",      icon: <FileText size={18} /> },
+  { label: "Fiches de Paie",   href: "/rh/fiches-paie",   icon: <Briefcase size={18} /> },
+  { label: "Congés",           href: "/rh/conges",        icon: <CalendarDays size={18} /> },
+  { label: "Rapports",         href: "/rh/rapports",      icon: <BarChart3 size={18} /> },
+  { label: "Notifications",    href: "/rh/notifications", icon: <Bell size={18} /> },
+];
+
+// Navigation pour MANAGER
+const MANAGER_NAV_ITEMS: NavItem[] = [
+  { label: "Tableau de bord",  href: "/manager/dashboard", icon: <LayoutDashboard size={18} /> },
+  { label: "Mon Équipe",       href: "/manager/equipe",    icon: <Users size={18} /> },
+  { label: "Congés Équipe",    href: "/manager/conges",    icon: <CalendarDays size={18} /> },
+  { label: "Contrats Équipe",  href: "/manager/contrats",  icon: <FileText size={18} /> },
+  { label: "Notifications",    href: "/manager/notifications", icon: <Bell size={18} /> },
+];
+
+// Navigation pour EMPLOYÉ
+const EMPLOYE_NAV_ITEMS: NavItem[] = [
+  { label: "Tableau de bord",  href: "/employe/dashboard", icon: <LayoutDashboard size={18} /> },
+  { label: "Mon Profil",       href: "/employe/profil",    icon: <User size={18} /> },
+  { label: "Mon Contrat",      href: "/employe/contrat",   icon: <Briefcase size={18} /> },
+  { label: "Mes Congés",       href: "/employe/conges",    icon: <CalendarDays size={18} /> },
+  { label: "Notifications",    href: "/employe/notifications", icon: <Bell size={18} /> },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { label: "Paramètres",       href: "/settings",         icon: <Settings size={18} /> },
+  { label: "Paramètres",       href: "/directeur/parametres", icon: <Settings size={18} />, requiredRole: "DIRECTEUR" },
 ];
 
 export default function Sidebar() {
@@ -38,10 +67,35 @@ export default function Sidebar() {
   const { sidebarCollapsed, collapseSidebar, nbNotifsNonLues } = useUIStore();
 
   const isActive = (href: string) =>
-    href === "/dashboard" ? pathname === href : pathname.startsWith(href);
+    href === "/dashboard" || href === "/employe/dashboard" 
+      ? pathname === href 
+      : pathname.startsWith(href);
+
+  // Déterminer quelle navigation afficher selon le rôle
+  const getNavItems = () => {
+    switch (user?.role) {
+      case "EMPLOYE":
+        return EMPLOYE_NAV_ITEMS;
+      case "MANAGER":
+        return MANAGER_NAV_ITEMS;
+      case "RH":
+        return RH_NAV_ITEMS;
+      case "DIRECTEUR":
+      case "ADMIN":
+        return DIRECTEUR_NAV_ITEMS;
+      default:
+        return EMPLOYE_NAV_ITEMS;
+    }
+  };
+
+  const NAV_ITEMS = getNavItems();
 
   const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.requiredPermission || can(item.requiredPermission)
+    (item: NavItem) => !item.requiredPermission || can(item.requiredPermission)
+  );
+  
+  const visibleBottomItems = BOTTOM_ITEMS.filter(
+    (item: NavItem) => !item.requiredRole || user?.role === item.requiredRole
   );
 
   return (
@@ -91,14 +145,14 @@ export default function Sidebar() {
             item={item}
             active={isActive(item.href)}
             collapsed={sidebarCollapsed}
-            badge={item.href === "/notifications" ? nbNotifsNonLues : undefined}
+            badge={(item.href === "/notifications" || item.href === "/employe/notifications") ? nbNotifsNonLues : undefined}
           />
         ))}
       </nav>
 
       {/* Bottom section */}
       <div className="px-3 pb-4 space-y-1 border-t border-white/10 pt-3">
-        {BOTTOM_ITEMS.map((item) => (
+        {visibleBottomItems.map((item: NavItem) => (
           <NavLink key={item.href} item={item} active={isActive(item.href)} collapsed={sidebarCollapsed} />
         ))}
 

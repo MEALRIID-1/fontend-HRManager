@@ -86,7 +86,7 @@ export default function ContratsPage() {
           employeService.getAll()
         ]);
         setContrats(contratsRes.data);
-        setEmployees(employeesRes.data || []);
+        setEmployees(employeesRes.data?.data || []);
       } catch (error) {
         console.error("Erreur chargement données :", error);
         setContrats(MOCK_CONTRATS);

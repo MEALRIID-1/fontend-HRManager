@@ -3,7 +3,7 @@
 // ============================================================
 
 // ----- AUTHENTIFICATION -----
-export type UserRole = "ADMIN" | "RH" | "MANAGER" | "EMPLOYE";
+export type UserRole = "ADMIN" | "DIRECTEUR" | "RH" | "MANAGER" | "EMPLOYE";
 
 export interface User {
   id: string;
@@ -231,14 +231,34 @@ export interface Notification {
 
 // ----- RAPPORT -----
 export interface StatsDashboard {
+  // Employés
   totalEmployes: number;
   emploiesActifs: number;
   nouveauxCeMois: number;
   departements: number;
+
+  // Congés
   congesEnAttente: number;
   congesApprouves: number;
+  congesEnAttenteN2?: number;
+  congesEnAttenteN3?: number;
+  congesBloques?: number;
+  totalDemandes?: number;
+  totalApprouves?: number;
+  totalRefuses?: number;
+
+  // Contrats
   contratExpirantBientot: number;
+  contratsExpirant30j?: number;
+  totalContrats?: number;
+
+  // Finances
+  masseSalarialeMois?: number;
+  masseSalariale?: number;
+
+  // Présence
   tauxPresence: number;
+  tauxAbsenteismeMois?: number;
 }
 
 export interface RapportConge {

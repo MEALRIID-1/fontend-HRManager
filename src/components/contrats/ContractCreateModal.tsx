@@ -86,7 +86,8 @@ export default function ContractCreateModal({ isOpen, onClose, onSubmit }: Contr
   const loadEmployees = async () => {
     try {
       const response = await employeService.getAll();
-      setEmployees(response.data || []);
+      // La réponse API a la structure: { data: { data: Employe[], meta: {...} } }
+      setEmployees(response.data?.data || []);
     } catch (error) {
       console.error("Erreur chargement employés :", error);
     }

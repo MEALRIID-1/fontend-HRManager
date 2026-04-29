@@ -1,28 +1,34 @@
 import { create } from "zustand";
 
-export type ToastType = "view" | "edit" | "delete";
+// Types de toast disponibles
+export type ToastVariant = "success" | "error" | "info" | "warning";
 
-export interface Toast {
+// Interface ToastType pour les appels à addToast
+export interface ToastType {
+  type: ToastVariant;
+  message: string;
+}
+
+export interface Toast extends ToastType {
   id: string;
-  type: ToastType;
   timestamp: number;
 }
 
 interface ToastStore {
   toasts: Toast[];
-  addToast: (type: ToastType) => void;
+  addToast: (toast: ToastType) => void;
   removeToast: (id: string) => void;
 }
 
 export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
-  addToast: (type) =>
+  addToast: (toast) =>
     set((state) => ({
       toasts: [
         ...state.toasts,
         {
           id: `${Date.now()}-${Math.random()}`,
-          type,
+          ...toast,
           timestamp: Date.now(),
         },
       ].slice(-3), // Keep only the last 3 toasts

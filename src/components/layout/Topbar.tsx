@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Bell, Search, Menu } from "lucide-react";
+import { Bell, Search, MoreVertical, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useUIStore } from "@/store/ui.store";
@@ -12,47 +12,52 @@ interface TopbarProps {
   actions?: React.ReactNode;
 }
 
+/**
+ * Barre supérieure responsive
+ * - Desktop: titre à gauche, actions à droite
+ * - Mobile/Tablette: titre compact, bouton ⋮ pour la sidebar
+ */
 export default function Topbar({ title, subtitle, actions }: TopbarProps) {
   const { user } = useAuth();
   const { toggleNotifPanel, nbNotifsNonLues, setSidebarOpen, sidebarOpen } = useUIStore();
 
   return (
-    <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-slate-100 flex-shrink-0">
-      {/* Left: mobile menu + page title */}
-      <div className="flex items-center gap-4">
-        <button
-          className="md:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          <Menu size={20} />
-        </button>
+    <header className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-6 bg-white border-b border-slate-100 flex-shrink-0">
+      {/* Left: page title (compact sur mobile) */}
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
         {title && (
-          <div>
-            <h1 className="text-lg font-bold text-slate-800 leading-tight">{title}</h1>
-            {subtitle && <p className="text-xs text-muted">{subtitle}</p>}
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-slate-800 leading-tight truncate">{title}</h1>
+            {subtitle && <p className="text-xs text-muted hidden sm:block">{subtitle}</p>}
           </div>
         )}
       </div>
 
-      {/* Right: search, notifications, user */}
-      <div className="flex items-center gap-2">
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {/* Right: actions, search, notifications, user, menu */}
+      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+        {/* Actions personnalisées (masquées sur très petit écran) */}
+        {actions && (
+          <div className="hidden md:flex items-center gap-2 mr-2">
+            {actions}
+          </div>
+        )}
 
-        {/* Search */}
+        {/* Search - masqué sur mobile */}
         <button className={cn(
-          "hidden sm:flex items-center gap-2 px-3 h-9 rounded-xl border border-slate-200",
+          "hidden md:flex items-center gap-2 px-3 h-9 rounded-xl border border-slate-200",
           "text-sm text-slate-400 bg-slate-50 hover:bg-white hover:border-primary-300",
           "transition-all duration-150 min-w-[160px]"
         )}>
           <Search size={14} />
-          <span>Rechercher…</span>
-          <span className="ml-auto text-xs bg-slate-200 rounded px-1">⌘K</span>
+          <span className="hidden lg:inline">Rechercher…</span>
+          <span className="ml-auto text-xs bg-slate-200 rounded px-1 hidden xl:inline">⌘K</span>
         </button>
 
         {/* Notifications */}
         <button
           onClick={toggleNotifPanel}
           className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+          aria-label="Notifications"
         >
           <Bell size={18} />
           {nbNotifsNonLues > 0 && (
@@ -62,8 +67,20 @@ export default function Topbar({ title, subtitle, actions }: TopbarProps) {
           )}
         </button>
 
-        {/* User avatar */}
-        <Avatar nom={user?.nom} prenom={user?.prenom} src={user?.avatar} size="sm" />
+        {/* User avatar - masqué sur très petit écran */}
+        <div className="hidden sm:block">
+          <Avatar nom={user?.nom} prenom={user?.prenom} src={user?.avatar} size="sm" />
+        </div>
+
+        {/* Bouton menu ⋮ (trois points) pour mobile/tablette */}
+        <button
+          className="lg:hidden flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 transition-colors ml-1"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label={sidebarOpen ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-expanded={sidebarOpen}
+        >
+          {sidebarOpen ? <X size={20} /> : <MoreVertical size={20} />}
+        </button>
       </div>
     </header>
   );

@@ -9,35 +9,38 @@ import type {
 
 export const employeService = {
   getAll: (filtres?: FiltresEmploye) =>
-    apiGet<PaginatedResponse<Employe>>("/employes", filtres),
+    apiGet<ApiResponse<{ data: Employe[]; meta?: { total: number; per_page: number; current_page: number } }>>("/employees", filtres),
 
   getById: (id: string) =>
-    apiGet<ApiResponse<Employe>>(`/employes/${id}`),
+    apiGet<ApiResponse<Employe>>(`/employees/${id}`),
 
   create: (data: Partial<Employe>) =>
-    apiPost<ApiResponse<Employe>>("/employes", data),
+    apiPost<ApiResponse<Employe>>("/employees", data),
 
   update: (id: string, data: Partial<Employe>) =>
-    apiPut<ApiResponse<Employe>>(`/employes/${id}`, data),
+    apiPut<ApiResponse<Employe>>(`/employees/${id}`, data),
 
   delete: (id: string) =>
-    apiDelete<ApiResponse<null>>(`/employes/${id}`),
+    apiDelete<ApiResponse<null>>(`/employees/${id}`),
+
+  restore: (id: string) =>
+    apiPut<ApiResponse<Employe>>(`/employees/${id}/restore`),
+
+  getTrashed: () =>
+    apiGet<ApiResponse<{ data: Employe[]; meta?: any }>>("/employees/trashed"),
 
   updateStatut: (id: string, statut: StatutEmploye) =>
-    apiPatch<ApiResponse<Employe>>(`/employes/${id}/statut`, { statut }),
+    apiPatch<ApiResponse<Employe>>(`/employees/${id}/statut`, { statut }),
 
-  uploadAvatar: async (id: string, file: File) => {
+  uploadPhoto: async (id: string, file: File) => {
     const form = new FormData();
-    form.append("avatar", file);
+    form.append("photo", file);
     const { default: api } = await import("@/lib/api");
-    return api.post<ApiResponse<{ avatarUrl: string }>>(`/employes/${id}/avatar`, form, {
+    return api.post<ApiResponse<{ photo_url: string }>>(`/files/photo/${id}`, form, {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
 
-  getDocuments: (id: string) =>
-    apiGet<ApiResponse<Document[]>>(`/employes/${id}/documents`),
-
-  getSoldeConges: (id: string) =>
-    apiGet<ApiResponse<{ annuels: number; maladie: number }>>(`/employes/${id}/conges/solde`),
+  getStats: () =>
+    apiGet<ApiResponse<{ total_employes: number; actifs: number; nouveaux: number }>>("/employees/stats"),
 };

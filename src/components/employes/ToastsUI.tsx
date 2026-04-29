@@ -1,39 +1,32 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Eye, Check, Trash2, X } from "lucide-react";
-import { useToastStore, type ToastType } from "@/store/toast.store";
+import { Check, X, AlertCircle, Info, AlertTriangle } from "lucide-react";
+import { useToastStore, type Toast, type ToastVariant } from "@/store/toast.store";
 import "@/styles/employees-liquid-glass.css";
 
-const toastConfig: Record<ToastType, { message: string; color: string }> = {
-  view: {
-    message: "Profil consulté avec succès",
-    color: "violet",
-  },
-  edit: {
-    message: "Modifications enregistrées",
-    color: "cyan",
-  },
-  delete: {
-    message: "Employé supprimé avec succès",
-    color: "red",
-  },
+// Configuration des couleurs et icônes par variant
+const toastConfig: Record<ToastVariant, { color: string }> = {
+  success: { color: "emerald" },
+  error: { color: "red" },
+  info: { color: "blue" },
+  warning: { color: "amber" },
 };
 
-const toastIcons: Record<ToastType, React.ReactNode> = {
-  view: <Eye size={18} />,
-  edit: <Check size={18} />,
-  delete: <Trash2 size={18} />,
+const toastIcons: Record<ToastVariant, React.ReactNode> = {
+  success: <Check size={18} />,
+  error: <AlertCircle size={18} />,
+  info: <Info size={18} />,
+  warning: <AlertTriangle size={18} />,
 };
 
 interface ToastItemProps {
-  id: string;
-  type: ToastType;
+  toast: Toast;
   index: number;
   onClose: () => void;
 }
 
-function ToastItem({ id, type, index, onClose }: ToastItemProps) {
-  const config = toastConfig[type];
+function ToastItem({ toast, index, onClose }: ToastItemProps) {
+  const config = toastConfig[toast.type];
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
@@ -52,8 +45,8 @@ function ToastItem({ id, type, index, onClose }: ToastItemProps) {
         transform: `translateY(${index * 16}px) scale(${1 - index * 0.02})`,
       }}
     >
-      <div className="toast-icon">{toastIcons[type]}</div>
-      <div className="toast-message">{config.message}</div>
+      <div className="toast-icon">{toastIcons[toast.type]}</div>
+      <div className="toast-message">{toast.message}</div>
       <button
         onClick={() => {
           setIsExiting(true);
@@ -76,8 +69,7 @@ export function ToastsUI() {
       {toasts.map((toast, index) => (
         <ToastItem
           key={toast.id}
-          id={toast.id}
-          type={toast.type}
+          toast={toast}
           index={index}
           onClose={() => removeToast(toast.id)}
         />

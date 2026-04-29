@@ -1,7 +1,15 @@
 import axios, { AxiosError, type AxiosInstance, type AxiosResponse } from "axios";
 import { storage } from "./utils";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api";
+
+function clearAuthCookies() {
+  if (typeof document === "undefined") return;
+
+  document.cookie = "rh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+  document.cookie = "rh_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+  document.cookie = "rh_user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+}
 
 // ── Axios instance ──────────────────────────────────────────────────────────
 const api: AxiosInstance = axios.create({
@@ -34,6 +42,7 @@ api.interceptors.response.use(
     if (status === 401) {
       storage.remove("rh_token");
       storage.remove("rh_user");
+      clearAuthCookies();
       if (typeof window !== "undefined") {
         window.location.href = "/auth/login?session=expired";
       }
