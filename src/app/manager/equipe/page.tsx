@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { TrashView } from "@/components/shared";
 import type { Employe } from "@/types";
 import toast from "react-hot-toast";
-import { employeService } from "@/lib/services";
+import { managerService } from "@/lib/services";
 import { useAuthStore } from "@/store/auth.store";
 
 interface EmployeAvecPresence extends Employe {
@@ -55,10 +55,10 @@ export default function ManagerEquipePage() {
       setIsLoading(true);
       setIsError(false);
 
-      const res = await employeService.getAll({
-        manager_id: user?.id,
+      const res = await managerService.getEquipe({
+        search: searchQuery,
         per_page: 100,
-      } as any);
+      });
 
       if (res.success) {
         const list: EmployeAvecPresence[] = ((res.data as any)?.data ?? []).map((e: any) => ({
@@ -74,7 +74,7 @@ export default function ManagerEquipePage() {
     } catch (error: any) {
       console.error("Erreur chargement équipe:", error);
       setIsError(true);
-      toast.error(error?.response?.data?.message || error?.message || "Impossible de charger l'équipe");
+      toast.error(error?.message || "Impossible de charger l'équipe");
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +82,7 @@ export default function ManagerEquipePage() {
 
   useEffect(() => {
     loadEquipe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Filtrage
@@ -306,7 +307,7 @@ export default function ManagerEquipePage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 text-sm text-slate-700">
                         <Building2 size={14} className="text-slate-400" />
-                        Informatique
+                        {(employe as any).departement?.nom || 'Non assigné'}
                       </div>
                     </td>
                     <td className="px-4 py-3">

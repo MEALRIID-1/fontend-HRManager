@@ -9,6 +9,7 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, Badge, Button, Avatar } from "@/components/ui";
 import { cn, fromNow } from "@/lib/utils";
+import { notificationService } from "@/lib/services";
 import type { Notification, TypeNotification } from "@/types";
 import toast from "react-hot-toast";
 
@@ -46,25 +47,8 @@ export default function ManagerNotificationsPage() {
       setIsLoading(true);
       setIsError(false);
 
-      const mockNotifications: Notification[] = [
-        {
-          id: "1", userId: "1", type: "CONGE_SOUMIS", titre: "Nouvelle demande de congé",
-          message: "Sophie Martin a soumis une demande de congé pour le 15-20 juin",
-          priorite: "NORMALE", lue: false, createdAt: "2025-04-27T10:30:00Z",
-        },
-        {
-          id: "2", userId: "1", type: "CONGE_SOUMIS", titre: "Nouvelle demande de congé",
-          message: "Lucas Bernard a soumis une demande de congé maladie",
-          priorite: "NORMALE", lue: false, createdAt: "2025-04-26T14:00:00Z",
-        },
-        {
-          id: "3", userId: "1", type: "CONTRAT_EXPIRE_BIENTOT", titre: "Contrat expirant",
-          message: "Le contrat de Thomas Petit expire dans 30 jours",
-          priorite: "HAUTE", lue: true, createdAt: "2025-04-25T09:00:00Z",
-        },
-      ];
-
-      setNotifications(mockNotifications);
+      const response = await notificationService.getAll();
+      setNotifications(response.data || []);
     } catch (error) {
       setIsError(true);
       toast.error("Impossible de charger les notifications");
@@ -79,12 +63,22 @@ export default function ManagerNotificationsPage() {
 
   const markAsRead = async (notif: Notification) => {
     if (notif.lue) return;
-    setNotifications(notifications.map(n => n.id === notif.id ? { ...n, lue: true } : n));
+    try {
+      await notificationService.marquerCommeLue(notif.id);
+      setNotifications(notifications.map(n => n.id === notif.id ? { ...n, lue: true } : n));
+    } catch (error) {
+      toast.error("Erreur lors du marquage comme lu");
+    }
   };
 
   const markAllAsRead = async () => {
-    setNotifications(notifications.map(n => ({ ...n, lue: true })));
-    toast.success("Toutes les notifications marquées comme lues");
+    try {
+      await notificationService.marquerToutesLues();
+      setNotifications(notifications.map(n => ({ ...n, lue: true })));
+      toast.success("Toutes les notifications marquées comme lues");
+    } catch (error) {
+      toast.error("Erreur lors du marquage");
+    }
   };
 
   const getNotifConfig = (type: TypeNotification) => NOTIFICATION_CONFIG[type] || NOTIFICATION_CONFIG.SYSTEME;

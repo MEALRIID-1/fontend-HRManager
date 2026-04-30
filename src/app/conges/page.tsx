@@ -11,75 +11,8 @@ import {
   formatDate, STATUT_CONGE_LABELS, TYPE_CONGE_LABELS,
   getStatutCongeVariant, getNiveauWorkflowLabel, cn,
 } from "@/lib/utils";
+import { rhCongeService } from "@/lib/services";
 import type { DemandeConge, StatutConge, TypeConge } from "@/types";
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const MOCK_CONGES: DemandeConge[] = [
-  {
-    id: "cg1", employeId: "e1",
-    employe: { id: "e1", nom: "Dupont", prenom: "Jean", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 0, congesRestants: { annuels: 18, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP001" },
-    type: "ANNUEL", statut: "EN_ATTENTE_N1",
-    dateDebut: "2024-07-20", dateFin: "2024-07-25", nombreJours: 6,
-    motif: "Vacances d'été en famille",
-    workflow: {
-      niveauActuel: 1,
-      etapes: [
-        { niveau: 1, label: "Manager", statut: "EN_ATTENTE" },
-        { niveau: 2, label: "RH",      statut: "EN_ATTENTE" },
-        { niveau: 3, label: "Direction",statut: "EN_ATTENTE" },
-      ],
-    },
-    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), updatedAt: "",
-  },
-  {
-    id: "cg2", employeId: "e2",
-    employe: { id: "e2", nom: "Martin", prenom: "Marie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 0, congesRestants: { annuels: 12, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP002" },
-    type: "MALADIE", statut: "APPROUVE_N2",
-    dateDebut: "2024-07-15", dateFin: "2024-07-17", nombreJours: 3,
-    motif: "Arrêt médical prescrit",
-    workflow: {
-      niveauActuel: 2,
-      etapes: [
-        { niveau: 1, label: "Manager",  statut: "APPROUVE", commentaire: "OK", dateDecision: "2024-07-14" },
-        { niveau: 2, label: "RH",       statut: "APPROUVE", commentaire: "Validé", dateDecision: "2024-07-15" },
-        { niveau: 3, label: "Direction",statut: "EN_ATTENTE" },
-      ],
-    },
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), updatedAt: "",
-  },
-  {
-    id: "cg3", employeId: "e3",
-    employe: { id: "e3", nom: "Bernard", prenom: "Paul", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 0, congesRestants: { annuels: 20, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP003" },
-    type: "ANNUEL", statut: "APPROUVE_N3",
-    dateDebut: "2024-08-01", dateFin: "2024-08-10", nombreJours: 10,
-    motif: "Congés d'été",
-    workflow: {
-      niveauActuel: 3,
-      etapes: [
-        { niveau: 1, label: "Manager",  statut: "APPROUVE", dateDecision: "2024-07-20" },
-        { niveau: 2, label: "RH",       statut: "APPROUVE", dateDecision: "2024-07-21" },
-        { niveau: 3, label: "Direction",statut: "APPROUVE", commentaire: "Approuvé ✓", dateDecision: "2024-07-22" },
-      ],
-    },
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), updatedAt: "",
-  },
-  {
-    id: "cg4", employeId: "e4",
-    employe: { id: "e4", nom: "Leroy", prenom: "Sophie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 0, congesRestants: { annuels: 5, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP004" },
-    type: "EXCEPTIONNEL", statut: "REFUSE_N1",
-    dateDebut: "2024-07-18", dateFin: "2024-07-18", nombreJours: 1,
-    motif: "Motif personnel",
-    workflow: {
-      niveauActuel: 1,
-      etapes: [
-        { niveau: 1, label: "Manager",  statut: "REFUSE", commentaire: "Insuffisant de personnel", dateDecision: "2024-07-17" },
-        { niveau: 2, label: "RH",       statut: "SKIPPED" },
-        { niveau: 3, label: "Direction",statut: "SKIPPED" },
-      ],
-    },
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), updatedAt: "",
-  },
-];
 
 // ── Workflow badge ─────────────────────────────────────────────────────────────
 function WorkflowProgress({ workflow }: { workflow: DemandeConge["workflow"] }) {
@@ -127,8 +60,18 @@ export default function CongesPage() {
   const [expandedRefus, setExpandedRefus] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const t = setTimeout(() => { setConges(MOCK_CONGES); setLoading(false); }, 600);
-    return () => clearTimeout(t);
+    const loadConges = async () => {
+      try {
+        const response = await rhCongeService.getAll();
+        setConges(response.data?.data || []);
+      } catch (error) {
+        console.error("Erreur chargement congés :", error);
+        setConges([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadConges();
   }, []);
 
   useEffect(() => {

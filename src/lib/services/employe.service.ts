@@ -43,4 +43,7 @@ export const employeService = {
 
   getStats: () =>
     apiGet<ApiResponse<{ total_employes: number; actifs: number; nouveaux: number }>>("/employees/stats"),
+
+  getDepartements: () =>
+    apiGet<ApiResponse<{ id: string; nom: string; code?: string }[]>>("/departements"),
 };

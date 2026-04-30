@@ -438,3 +438,11 @@ export function TabsContent({ value, children, className }: TabsContentProps) {
     </div>
   );
 }
+
+// ── RE-EXPORTS DES NOUVEAUX COMPOSANTS UI ────────────────────────────────────
+// Note: Skeleton, EmptyState, Select et Avatar existent déjà dans ce fichier ci-dessus
+export { ErrorState, ErrorInline } from "./ErrorState";
+export { ConfirmModal } from "./ConfirmModal";
+export { Pagination, PaginationSimple } from "./Pagination";
+export { Badge as BadgeNew } from "./Badge";  // Badge avec le nouveau design system
+// Select et Avatar sont définis localement plus haut

@@ -298,6 +298,19 @@ export interface ApiError {
   errors?: Record<string, string[]>;
 }
 
+// ----- RE-EXPORTS TYPES SPÉCIFIQUES -----
+export type {
+  Conge,
+  CongeEtat,
+  Validation,
+  SoldeConges,
+  CongeFormData,
+  ValidationDecision,
+  CONGE_ETAT_LABELS,
+  TYPE_CONGE_LABELS,
+} from './conge';
+// Note: TypeConge est déjà défini localement dans ce fichier
+
 // ----- FILTRES -----
 export interface FiltresEmploye {
   search?: string;

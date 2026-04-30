@@ -11,7 +11,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardHeader, CardTitle, Badge, Button, Input, Avatar } from "@/components/ui";
 import { TrashView } from "@/components/shared";
 import { cn, fromNow } from "@/lib/utils";
-import { leaveService } from "@/lib/services";
+import { managerService } from "@/lib/services";
 import type { DemandeConge } from "@/types";
 import toast from "react-hot-toast";
 
@@ -40,7 +40,7 @@ export default function ManagerCongesPage() {
       setIsLoading(true);
       setIsError(false);
 
-      const response = await leaveService.getAll();
+      const response = await managerService.getConges();
       if (response.success) {
         const data = (response.data as any)?.data ?? response.data ?? [];
         setConges(Array.isArray(data) ? data : []);
@@ -50,25 +50,15 @@ export default function ManagerCongesPage() {
     } catch (error: any) {
       console.error("Erreur chargement congés:", error);
       setIsError(true);
-      toast.error(error?.response?.data?.message || error?.message || "Impossible de charger les congés");
+      toast.error(error?.message || "Impossible de charger les congés");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Chargement des archives
+  // Chargement des archives - Manager ne voit pas les archives
   const loadArchives = async (): Promise<any[]> => {
-    try {
-      const res = await leaveService.getTrashed();
-      if (res.success) {
-        return (res.data?.data || []);
-      }
-      toast.error(res.message || "Erreur lors du chargement de la corbeille");
-      return [];
-    } catch (e: any) {
-      toast.error(e?.message || "Erreur lors du chargement de la corbeille");
-      return [];
-    }
+    return [];
   };
 
   useEffect(() => {
@@ -107,7 +97,7 @@ export default function ManagerCongesPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await leaveService.approve(selectedConge.id);
+      const response = await managerService.approuverConge(selectedConge.id, commentaire);
       if (!response.success) throw new Error((response as any).message || "Erreur validation");
       toast.success("Congé validé avec succès");
       // Rafraîchir pour avoir les données exactes de l'API
@@ -140,7 +130,7 @@ export default function ManagerCongesPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await leaveService.reject(selectedConge.id, savedMotif);
+      const response = await managerService.refuserConge(selectedConge.id, savedMotif);
       if (!response.success) throw new Error((response as any).message || "Erreur refus");
       toast.success("Congé refusé");
       loadConges();
@@ -154,18 +144,8 @@ export default function ManagerCongesPage() {
   };
 
   const handleRestore = async (id: string) => {
-    try {
-      const res = await leaveService.restore(id);
-      if (res.success) {
-        toast.success("Congé restauré avec succès");
-        loadConges();
-      } else {
-        throw new Error(res.message || "Erreur lors de la restauration");
-      }
-    } catch (e: any) {
-      toast.error(e?.message || "Échec de la restauration");
-      throw e;
-    }
+    toast.error("Contactez votre RH pour restaurer un congé archivé");
+    throw new Error("Contactez votre RH pour restaurer un congé archivé");
   };
 
   if (isLoading) {

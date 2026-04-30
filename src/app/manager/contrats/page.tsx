@@ -12,7 +12,7 @@ import { TrashView } from "@/components/shared";
 import { cn, formatDate } from "@/lib/utils";
 import type { Contrat, Employe } from "@/types";
 import toast from "react-hot-toast";
-import { contractService } from "@/lib/services";
+import { managerService } from "@/lib/services";
 
 type TabType = "actifs" | "archives";
 
@@ -37,7 +37,11 @@ export default function ManagerContratsPage() {
       setIsLoading(true);
       setIsError(false);
 
-      const res = await contractService.getAll({ statut: "EN_COURS" });
+      const res = await managerService.getContrats({
+        search: searchQuery,
+        statut: filterEtat !== "all" ? filterEtat : undefined,
+        type: filterType !== "all" ? filterType : undefined,
+      });
       if (res.success) {
         const list = ((res.data as any)?.data ?? []).map((c: any) => ({
           ...c,
@@ -52,15 +56,14 @@ export default function ManagerContratsPage() {
     } catch (error: any) {
       console.error("Erreur chargement contrats:", error);
       setIsError(true);
-      toast.error(error?.response?.data?.message || error?.message || "Impossible de charger les contrats");
+      toast.error(error?.message || "Impossible de charger les contrats");
     } finally {
       setIsLoading(false);
     }
   };
 
   const loadArchives = async (): Promise<ContratAvecEmploye[]> => {
-    const res = await contractService.getTrashed();
-    if (res.success) return (res.data as any)?.data ?? [];
+    // Le manager ne voit pas les contrats archivés selon les specs
     return [];
   };
 

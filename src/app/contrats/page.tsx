@@ -16,52 +16,7 @@ import {
 } from "@/lib/utils";
 import type { Contrat, StatutContrat, TypeContrat, Employe } from "@/types";
 
-// ── Mock contrats ─────────────────────────────────────────────────────────────
-const MOCK_CONTRATS: Contrat[] = [
-  {
-    id: "ct1", reference: "CTR-2024-001", employeId: "e1",
-    employe: { id: "e1", nom: "Dupont", prenom: "Jean", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2022-01-15", posteId: "", departementId: "", typeContrat: "CDI", salaireBase: 450000, rib: "FR7612345678901234567890123", cnss: "23700123456", congesRestants: { annuels: 18, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP001" },
-    type: "CDI", statut: "SIGNE", dateDebut: "2022-01-15",
-    posteId: "p1", poste: { id: "p1", intitule: "Développeur Senior", code: "P001", departementId: "d1", niveauHierarchique: 3 },
-    departementId: "d1",
-    salaireBase: 450000,
-    avantages: ["Assurance maladie", "Transport", "Prime annuelle"],
-    createdAt: "2022-01-10", updatedAt: "2022-01-15",
-  },
-  {
-    id: "ct2", reference: "CTR-2024-002", employeId: "e2",
-    employe: { id: "e2", nom: "Martin", prenom: "Marie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2023-06-01", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 280000, rib: "FR7623456789012345678901234", cnss: "23700234567", congesRestants: { annuels: 12, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP002" },
-    type: "CDD", statut: "EN_COURS",
-    dateDebut: "2023-06-01", dateFin: new Date(Date.now() + 1000 * 60 * 60 * 24 * 20).toISOString().split("T")[0],
-    posteId: "p2", poste: { id: "p2", intitule: "Responsable RH", code: "P002", departementId: "d2", niveauHierarchique: 4 },
-    departementId: "d2",
-    salaireBase: 280000,
-    avantages: ["Assurance maladie"],
-    createdAt: "2023-05-20", updatedAt: "2023-06-01",
-  },
-  {
-    id: "ct3", reference: "CTR-2024-003", employeId: "e3",
-    employe: { id: "e3", nom: "Bernard", prenom: "Paul", email: "", telephone: "", genre: "MASCULIN", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "ACTIF", dateEmbauche: "2024-01-10", posteId: "", departementId: "", typeContrat: "STAGE", salaireBase: 120000, rib: "FR7634567890123456789012345", cnss: "23700345678", congesRestants: { annuels: 5, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP003" },
-    type: "STAGE", statut: "EN_COURS",
-    dateDebut: "2024-01-10", dateFin: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString().split("T")[0],
-    posteId: "p3", poste: { id: "p3", intitule: "Stagiaire Informatique", code: "P003", departementId: "d1", niveauHierarchique: 1 },
-    departementId: "d1",
-    salaireBase: 120000,
-    avantages: ["Transport"],
-    createdAt: "2024-01-05", updatedAt: "2024-01-10",
-  },
-  {
-    id: "ct4", reference: "CTR-2023-045", employeId: "e4",
-    employe: { id: "e4", nom: "Leroy", prenom: "Sophie", email: "", telephone: "", genre: "FEMININ", dateNaissance: "", nationalite: "", adresse: { rue: "", ville: "", codePostal: "", pays: "" }, statut: "INACTIF", dateEmbauche: "2021-03-01", posteId: "", departementId: "", typeContrat: "CDD", salaireBase: 200000, rib: "FR7645678901234567890123456", cnss: "23700456789", congesRestants: { annuels: 0, maladie: 0, exceptionnels: 0 }, createdAt: "", updatedAt: "", matricule: "EMP004" },
-    type: "CDD", statut: "EXPIRE",
-    dateDebut: "2021-03-01", dateFin: "2023-12-31",
-    posteId: "p4", poste: { id: "p4", intitule: "Commerciale", code: "P004", departementId: "d3", niveauHierarchique: 2 },
-    departementId: "d3",
-    salaireBase: 200000,
-    avantages: [],
-    createdAt: "2021-02-20", updatedAt: "2023-12-31",
-  },
-];
+import { contractService } from "@/lib/services";
 
 export default function ContratsPage() {
   const router = useRouter();
@@ -81,15 +36,14 @@ export default function ContratsPage() {
     const loadData = async () => {
       try {
         const [contratsRes, employeesRes] = await Promise.all([
-          // Simuler chargement contrats depuis API
-          Promise.resolve({ data: MOCK_CONTRATS }),
+          contractService.getAll(),
           employeService.getAll()
         ]);
-        setContrats(contratsRes.data);
+        setContrats(contratsRes.data?.data || []);
         setEmployees(employeesRes.data?.data || []);
       } catch (error) {
         console.error("Erreur chargement données :", error);
-        setContrats(MOCK_CONTRATS);
+        setContrats([]);
       } finally {
         setLoading(false);
       }
@@ -115,34 +69,26 @@ export default function ContratsPage() {
   };
 
   const handleCreateContract = async (data: Partial<Contrat>) => {
-    // Générer une référence unique
-    const reference = `CTR-${Date.now().toString().slice(-4)}`;
-    const employee = employees.find(e => e.id === data.employeId);
-    const newContract: Contrat = {
-      id: `ct${Date.now()}`,
-      reference,
-      employeId: data.employeId!,
-      employe: employee!,
-      type: data.type!,
-      statut: data.statut || "BROUILLON",
-      dateDebut: data.dateDebut!,
-      dateFin: data.dateFin,
-      posteId: employee?.posteId || "",
-      poste: employee?.poste,
-      departementId: employee?.departementId || "",
-      salaireBase: data.salaireBase!,
-      avantages: data.avantages || [],
-      clauses: data.clauses,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setContrats([...contrats, newContract]);
+    try {
+      const response = await contractService.create(data);
+      if (response.success && response.data) {
+        setContrats([...contrats, response.data]);
+      }
+    } catch (error) {
+      console.error("Erreur création contrat :", error);
+    }
   };
 
   const handleUpdateContract = async (data: Partial<Contrat>) => {
     if (!selectedContract) return;
-    const updatedContract = { ...selectedContract, ...data } as Contrat;
-    setContrats(contrats.map((item) => (item.id === updatedContract.id ? updatedContract : item)));
+    try {
+      const response = await contractService.update(selectedContract.id, data);
+      if (response.success && response.data) {
+        setContrats(contrats.map((item) => (item.id === selectedContract.id ? response.data! : item)));
+      }
+    } catch (error) {
+      console.error("Erreur mise à jour contrat :", error);
+    }
     setSelectedContract(null);
   };
 

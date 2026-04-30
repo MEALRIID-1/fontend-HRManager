@@ -1,48 +1,15 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 import { Download, FileText, TrendingUp, Users, CalendarDays, FileBarChart2 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Card, CardHeader, CardTitle, Button, Select } from "@/components/ui";
+import { Card, CardHeader, CardTitle, Button, Select, Skeleton } from "@/components/ui";
 import { cn } from "@/lib/utils";
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const EVOLUTION_EFFECTIFS = [
-  { mois: "Jan", total: 130, entrees: 5, sorties: 2 },
-  { mois: "Fév", total: 133, entrees: 4, sorties: 1 },
-  { mois: "Mar", total: 136, entrees: 5, sorties: 2 },
-  { mois: "Avr", total: 138, entrees: 3, sorties: 1 },
-  { mois: "Mai", total: 141, entrees: 4, sorties: 1 },
-  { mois: "Jun", total: 148, entrees: 8, sorties: 1 },
-];
-
-const CONGES_PAR_TYPE = [
-  { name: "Annuel",       value: 68, color: "#3b82f6" },
-  { name: "Maladie",      value: 24, color: "#10b981" },
-  { name: "Exceptionnel", value: 12, color: "#f59e0b" },
-  { name: "Formation",    value: 8,  color: "#8b5cf6" },
-  { name: "Sans solde",   value: 4,  color: "#94a3b8" },
-];
-
-const ABSENTEISME = [
-  { mois: "Jan", taux: 3.2 },
-  { mois: "Fév", taux: 2.8 },
-  { mois: "Mar", taux: 4.1 },
-  { mois: "Avr", taux: 3.5 },
-  { mois: "Mai", taux: 2.9 },
-  { mois: "Jun", taux: 3.1 },
-];
-
-const CONTRATS_PAR_TYPE = [
-  { type: "CDI", count: 98 },
-  { type: "CDD", count: 32 },
-  { type: "Stage", count: 12 },
-  { type: "Freelance", count: 4 },
-  { type: "Apprentissage", count: 2 },
-];
+import { rapportService } from "@/lib/services";
+import toast from "react-hot-toast";
 
 const RAPPORTS_DISPONIBLES = [
   { id: "effectifs",    icon: <Users size={20} />,      label: "Rapport Effectifs",    desc: "Entrées, sorties, évolution mensuelle",      color: "text-primary-600 bg-primary-50" },
@@ -53,8 +20,62 @@ const RAPPORTS_DISPONIBLES = [
 
 type Period = "6m" | "1y" | "ytd";
 
+interface EvolutionData {
+  name: string;
+  employes: number;
+  embauches: number;
+  departs: number;
+}
+
+interface CongeTypeData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface AbsenteismeData {
+  mois: string;
+  taux: number;
+}
+
+interface ContratTypeData {
+  type: string;
+  count: number;
+}
+
 export default function RapportsPage() {
   const [period, setPeriod] = useState<Period>("6m");
+  const [evolutionData, setEvolutionData] = useState<EvolutionData[]>([]);
+  const [congesData, setCongesData] = useState<CongeTypeData[]>([]);
+  const [absenteismeData, setAbsenteismeData] = useState<AbsenteismeData[]>([]);
+  const [contratsData, setContratsData] = useState<ContratTypeData[]>([]);
+  const [kpis, setKpis] = useState({
+    retention: "94.6%",
+    turnover: "5.4%",
+    joursConges: "14.2",
+    tauxAbsentéisme: "3.3%"
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadRapports = async () => {
+      try {
+        setLoading(true);
+        const response = await rapportService.getChartData();
+        if (response.success && response.data) {
+          setEvolutionData(response.data.evolution || []);
+          setCongesData(response.data.departments?.map((d: any) => ({ name: d.name, value: d.value, color: d.color })) || []);
+        }
+        // TODO: Ajouter les endpoints pour absenteisme et contrats par type
+      } catch (error) {
+        console.error("Erreur chargement rapports:", error);
+        toast.error("Erreur lors du chargement des rapports");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadRapports();
+  }, [period]);
 
   return (
     <DashboardLayout
@@ -90,23 +111,32 @@ export default function RapportsPage() {
 
         {/* KPI Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            { label: "Taux de rétention",     value: "94.6%",  change: "+1.2%",  up: true },
-            { label: "Turnover annuel",        value: "5.4%",   change: "-0.8%",  up: false },
-            { label: "Jours congés / employé", value: "14.2",   change: "+0.5",   up: true },
-            { label: "Taux d'absentéisme",     value: "3.3%",   change: "-0.2%",  up: false },
-          ].map((kpi) => (
-            <Card key={kpi.label} className="text-center">
-              <p className="text-2xl font-bold text-slate-800">{kpi.value}</p>
-              <p className="text-xs text-muted mt-1">{kpi.label}</p>
-              <p className={cn(
-                "text-xs font-medium mt-1",
-                kpi.up ? "text-emerald-600" : "text-red-500"
-              )}>
-                {kpi.change} vs. mois préc.
-              </p>
-            </Card>
-          ))}
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="text-center p-4">
+                <Skeleton className="h-8 w-20 mx-auto mb-2" />
+                <Skeleton className="h-4 w-24 mx-auto" />
+              </Card>
+            ))
+          ) : (
+            [
+              { label: "Taux de rétention",     value: kpis.retention,  change: "+1.2%",  up: true },
+              { label: "Turnover annuel",        value: kpis.turnover,   change: "-0.8%",  up: false },
+              { label: "Jours congés / employé", value: kpis.joursConges, change: "+0.5",   up: true },
+              { label: "Taux d'absentéisme",     value: kpis.tauxAbsentéisme, change: "-0.2%",  up: false },
+            ].map((kpi) => (
+              <Card key={kpi.label} className="text-center">
+                <p className="text-2xl font-bold text-slate-800">{kpi.value}</p>
+                <p className="text-xs text-muted mt-1">{kpi.label}</p>
+                <p className={cn(
+                  "text-xs font-medium mt-1",
+                  kpi.up ? "text-emerald-600" : "text-red-500"
+                )}>
+                  {kpi.change} vs. mois préc.
+                </p>
+              </Card>
+            ))
+          )}
         </div>
 
         {/* Charts row 1 */}
@@ -117,8 +147,11 @@ export default function RapportsPage() {
               <CardTitle>Évolution des effectifs</CardTitle>
               <Button variant="outline" size="xs" icon={<Download size={12} />}>CSV</Button>
             </CardHeader>
+            {loading ? (
+              <Skeleton className="h-[220px] w-full" />
+            ) : (
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={EVOLUTION_EFFECTIFS}>
+              <LineChart data={evolutionData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="mois" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} domain={[120, 160]} />
@@ -128,6 +161,7 @@ export default function RapportsPage() {
                 <Line type="monotone" dataKey="sorties" name="Sorties" stroke="#ef4444" strokeWidth={2} strokeDasharray="4 2" dot={false} />
               </LineChart>
             </ResponsiveContainer>
+            )}
           </Card>
 
           {/* Congés par type */}
@@ -135,18 +169,22 @@ export default function RapportsPage() {
             <CardHeader>
               <CardTitle>Congés par type</CardTitle>
             </CardHeader>
+            {loading ? (
+              <Skeleton className="h-[160px] w-full" />
+            ) : (
             <ResponsiveContainer width="100%" height={160}>
               <PieChart>
-                <Pie data={CONGES_PAR_TYPE} cx="50%" cy="50%" outerRadius={70} innerRadius={45} paddingAngle={3} dataKey="value">
-                  {CONGES_PAR_TYPE.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} stroke="none" />
+                <Pie data={congesData} cx="50%" cy="50%" outerRadius={70} innerRadius={45} paddingAngle={3} dataKey="value">
+                  {congesData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color || "#3b82f6"} stroke="none" />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={{ borderRadius: "10px", fontSize: "11px" }} />
               </PieChart>
             </ResponsiveContainer>
+            )}
             <div className="space-y-1.5 mt-2">
-              {CONGES_PAR_TYPE.map((item) => (
+              {congesData.map((item) => (
                 <div key={item.name} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
@@ -167,8 +205,11 @@ export default function RapportsPage() {
               <CardTitle>Taux d'absentéisme (%)</CardTitle>
               <Button variant="outline" size="xs" icon={<Download size={12} />}>Export</Button>
             </CardHeader>
+            {loading ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : (
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={ABSENTEISME} barSize={28}>
+              <BarChart data={absenteismeData} barSize={28}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="mois" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} domain={[0, 6]} unit="%" />
@@ -176,6 +217,7 @@ export default function RapportsPage() {
                 <Bar dataKey="taux" name="Absentéisme" fill="#f59e0b" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+            )}
           </Card>
 
           {/* Contrats par type */}
@@ -183,8 +225,11 @@ export default function RapportsPage() {
             <CardHeader>
               <CardTitle>Répartition des contrats</CardTitle>
             </CardHeader>
+            {loading ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : (
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={CONTRATS_PAR_TYPE} barSize={32} layout="vertical">
+              <BarChart data={contratsData} barSize={32} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="type" type="category" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} width={80} />
@@ -192,6 +237,7 @@ export default function RapportsPage() {
                 <Bar dataKey="count" name="Nombre" fill="#3b82f6" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
+            )}
           </Card>
         </div>
 

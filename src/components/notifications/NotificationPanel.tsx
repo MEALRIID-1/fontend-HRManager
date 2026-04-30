@@ -24,52 +24,18 @@ export default function NotificationPanel() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data for development
-    setNotifications([
-      {
-        id: "1",
-        userId: "u1",
-        type: "CONGE_SOUMIS",
-        titre: "Nouvelle demande de congé",
-        message: "Jean Dupont a soumis une demande de congé annuel du 20 au 25 juillet.",
-        priorite: "NORMALE",
-        lue: false,
-        lienAction: "/conges",
-        createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      },
-      {
-        id: "2",
-        userId: "u1",
-        type: "CONTRAT_EXPIRE_BIENTOT",
-        titre: "Contrat expirant bientôt",
-        message: "Le contrat CDD de Marie Martin expire dans 15 jours.",
-        priorite: "HAUTE",
-        lue: false,
-        lienAction: "/contrats",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-      },
-      {
-        id: "3",
-        userId: "u1",
-        type: "CONGE_APPROUVE",
-        titre: "Congé approuvé",
-        message: "Votre demande de congé a été approuvée par la direction.",
-        priorite: "NORMALE",
-        lue: true,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-      },
-      {
-        id: "4",
-        userId: "u1",
-        type: "ANNIVERSAIRE_EMBAUCHE",
-        titre: "Anniversaire d'embauche",
-        message: "Paul Bernard fête ses 3 ans dans l'entreprise aujourd'hui ! 🎉",
-        priorite: "BASSE",
-        lue: true,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-      },
-    ]);
-    setLoading(false);
+    const loadNotifications = async () => {
+      try {
+        const response = await notificationService.getRecent();
+        setNotifications(response.data || []);
+      } catch (error) {
+        console.error("Erreur chargement notifications:", error);
+        setNotifications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadNotifications();
   }, []);
 
   const markAsRead = async (id: string) => {

@@ -12,15 +12,23 @@ import toast from "react-hot-toast";
 
 type TabType = "actifs" | "archives";
 
+interface Departement {
+  id: string;
+  nom: string;
+  code?: string;
+}
+
 interface EmployeForm {
   nom: string;
   prenom: string;
   email: string;
+  telephone: string;
+  dateNaissance: string;
   password: string;
-  departement: string;
+  departement_id: string;
   dateEmbauche: string;
   iban: string;
-  role: string;
+  role_id: string;
   isActive: boolean;
   photo?: File | null;
 }
@@ -40,10 +48,18 @@ export default function RHEmployesPage() {
   const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
 
   // Form state
-  const emptyForm: EmployeForm = { nom: "", prenom: "", email: "", password: "", departement: "", dateEmbauche: "", iban: "", role: "", isActive: true, photo: null };
+  const emptyForm: EmployeForm = { 
+    nom: "", prenom: "", email: "", telephone: "", dateNaissance: "",
+    password: "", departement_id: "", dateEmbauche: "", iban: "", role_id: "", 
+    isActive: true, photo: null 
+  };
   const [form, setForm] = useState<EmployeForm>(emptyForm);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Départements et rôles
+  const [departements, setDepartements] = useState<Departement[]>([]);
+  const [loadingDepts, setLoadingDepts] = useState(false);
 
   const generatePassword = () => {
     const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#";
@@ -52,10 +68,27 @@ export default function RHEmployesPage() {
     setForm(f => ({ ...f, password: pwd }));
   };
 
+  const fetchDepartements = async () => {
+    setLoadingDepts(true);
+    try {
+      const res = await employeService.getDepartements();
+      if (res.success) {
+        const data = res.data as any;
+        setDepartements(data?.data || data || []);
+      }
+    } catch {
+      // Silencieux
+    } finally {
+      setLoadingDepts(false);
+    }
+  };
+
   const openCreateForm = () => {
     setForm(emptyForm);
     setPhotoPreview(null);
     setEditingEmploye(null);
+    fetchDepartements();
+    loadRoles();
     setShowForm(true);
   };
 
@@ -64,16 +97,20 @@ export default function RHEmployesPage() {
       nom: emp.nom,
       prenom: emp.prenom,
       email: emp.email,
+      telephone: (emp as any).telephone || "",
+      dateNaissance: (emp as any).date_naissance || "",
       password: "",
-      departement: (emp as any).departement || "",
+      departement_id: (emp as any).departement_id || (emp as any).departement?.id || "",
       dateEmbauche: emp.dateEmbauche || "",
       iban: emp.rib || "",
-      role: (emp as any).role || "",
+      role_id: (emp as any).role_id || (emp as any).roles?.[0]?.id || "",
       isActive: emp.statut === "ACTIF",
       photo: null,
     });
     setPhotoPreview((emp as any).photo || null);
     setEditingEmploye(emp);
+    fetchDepartements();
+    loadRoles();
     setShowForm(true);
   };
 
@@ -99,8 +136,9 @@ export default function RHEmployesPage() {
     try {
       const payload: any = {
         nom: form.nom, prenom: form.prenom, email: form.email,
-        departement: form.departement, date_embauche: form.dateEmbauche,
-        iban: form.iban, role: form.role,
+        telephone: form.telephone, date_naissance: form.dateNaissance,
+        departement_id: form.departement_id, date_embauche: form.dateEmbauche,
+        iban: form.iban, role_id: form.role_id,
         statut: form.isActive ? "ACTIF" : "INACTIF",
         ...(form.password ? { password: form.password } : {}),
       };
@@ -255,115 +293,297 @@ export default function RHEmployesPage() {
       {/* Modal Formulaire Créer/Modifier */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50 rounded-t-2xl">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header sticky */}
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
               <div>
-                <h2 className="text-xl font-bold text-slate-800">{editingEmploye ? "Modifier l'employé" : "Nouvel employé"}</h2>
-                <p className="text-sm text-slate-500">{editingEmploye ? `Modification de ${editingEmploye.prenom} ${editingEmploye.nom}` : "Créer un nouveau compte employé"}</p>
+                <h2 className="text-xl font-bold text-gray-800">
+                  {editingEmploye ? "Modifier l'employé" : "Nouvel employé"}
+                </h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {editingEmploye 
+                    ? `Modification de ${editingEmploye.prenom} ${editingEmploye.nom}` 
+                    : "Créer un nouveau compte employé"}
+                </p>
               </div>
-              <button onClick={() => setShowForm(false)} className="p-2 hover:bg-slate-200 rounded-lg"><X size={20} /></button>
+              <button 
+                onClick={() => setShowForm(false)} 
+                className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-200"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
             </div>
-            <div className="p-6 space-y-5">
-              {/* Photo */}
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  {photoPreview ? (
-                    <img src={photoPreview} alt="Photo" className="w-20 h-20 rounded-full object-cover border-2 border-slate-200" />
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                      <User size={32} />
+            
+            {/* Body scrollable */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+              
+              {/* Photo de profil */}
+              <section>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                  Photo de profil (optionnel)
+                </h3>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    {photoPreview ? (
+                      <img 
+                        src={photoPreview} 
+                        alt="Photo" 
+                        className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-200" 
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-blue-600">
+                        <User size={32} />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      icon={<Upload size={16} />} 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="rounded-xl border-gray-200"
+                    >
+                      Choisir une photo
+                    </Button>
+                    <p className="text-xs text-gray-400 mt-1.5">JPEG/PNG/WebP, max 2MB</p>
+                    <input 
+                      ref={fileInputRef} 
+                      type="file" 
+                      accept="image/jpeg,image/png,image/webp" 
+                      className="hidden" 
+                      onChange={handlePhotoChange} 
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Informations personnelles */}
+              <section>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                  Informations personnelles
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Nom */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Nom <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.nom}
+                      onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
+                      placeholder="Dupont"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      required
+                    />
+                  </div>
+                  
+                  {/* Prénom */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Prénom <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.prenom}
+                      onChange={e => setForm(f => ({ ...f, prenom: e.target.value }))}
+                      placeholder="Jean"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      required
+                    />
+                  </div>
+                  
+                  {/* Email */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                      placeholder="jean.dupont@company.com"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      required
+                    />
+                  </div>
+                  
+                  {/* Téléphone */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Téléphone
+                    </label>
+                    <input
+                      type="tel"
+                      value={form.telephone}
+                      onChange={e => setForm(f => ({ ...f, telephone: e.target.value }))}
+                      placeholder="+33 6 12 34 56 78"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    />
+                  </div>
+                  
+                  {/* Date de naissance */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Date de naissance
+                    </label>
+                    <input
+                      type="date"
+                      value={form.dateNaissance}
+                      onChange={e => setForm(f => ({ ...f, dateNaissance: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    />
+                  </div>
+                  
+                  {/* IBAN */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      IBAN / Compte bancaire
+                    </label>
+                    <input
+                      type="text"
+                      value={form.iban}
+                      onChange={e => setForm(f => ({ ...f, iban: e.target.value }))}
+                      placeholder="FR76 1234 5678 9012..."
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-mono text-sm"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Informations professionnelles */}
+              <section>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                  Informations professionnelles
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  
+                  {/* DÉPARTEMENT — Select dynamique */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Département <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={form.departement_id}
+                      onChange={e => setForm(f => ({ ...f, departement_id: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white cursor-pointer transition-all duration-200 text-gray-800"
+                      required
+                    >
+                      <option value="">-- Sélectionner un département --</option>
+                      {departements.map(dept => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.nom} {dept.code ? `(${dept.code})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {loadingDepts && (
+                      <p className="text-xs text-gray-400 animate-pulse">
+                        Chargement des départements...
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Date d'embauche */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Date d'embauche <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={form.dateEmbauche}
+                      onChange={e => setForm(f => ({ ...f, dateEmbauche: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      required
+                    />
+                  </div>
+                  
+                  {/* RÔLE — Select dynamique */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Rôle <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={form.role_id}
+                      onChange={e => setForm(f => ({ ...f, role_id: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white cursor-pointer transition-all duration-200 text-gray-800"
+                      required
+                    >
+                      <option value="">-- Sélectionner un rôle --</option>
+                      {roles.map(role => (
+                        <option key={role.id} value={role.id}>
+                          {role.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Mot de passe */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      {editingEmploye 
+                        ? "Nouveau mot de passe (optionnel)" 
+                        : "Mot de passe provisoire"}
+                      {!editingEmploye && <span className="text-red-500"> *</span>}
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={form.password}
+                        onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                        placeholder={editingEmploye ? "Laisser vide pour ne pas changer" : "Généré automatiquement"}
+                        className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-mono text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={generatePassword}
+                        className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm text-gray-600 transition-all duration-200 whitespace-nowrap font-medium"
+                      >
+                        🔄 Générer
+                      </button>
                     </div>
-                  )}
+                    {!editingEmploye && (
+                      <p className="text-xs text-gray-400">
+                        L'employé devra changer ce mot de passe à sa première connexion
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Statut actif - toggle switch */}
+                  <div className="flex items-center gap-3 pt-6">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.isActive}
+                        onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600" />
+                    </label>
+                    <span className="text-sm font-medium text-gray-700">
+                      Compte actif
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <Button variant="outline" size="sm" icon={<Upload size={16} />} onClick={() => fileInputRef.current?.click()}>Photo (optionnel)</Button>
-                  <p className="text-xs text-slate-400 mt-1">JPEG/PNG/WebP, max 2MB</p>
-                  <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoChange} />
-                </div>
-              </div>
-
-              {/* Nom / Prénom */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-1">Nom <span className="text-danger">*</span></label>
-                  <Input value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} placeholder="Dupont" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-1">Prénom <span className="text-danger">*</span></label>
-                  <Input value={form.prenom} onChange={e => setForm(f => ({ ...f, prenom: e.target.value }))} placeholder="Jean" />
-                </div>
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="text-sm font-medium text-slate-700 block mb-1">Email <span className="text-danger">*</span></label>
-                <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="jean.dupont@company.com" />
-              </div>
-
-              {/* Mot de passe */}
-              <div>
-                <label className="text-sm font-medium text-slate-700 block mb-1">
-                  {editingEmploye ? "Nouveau mot de passe (laisser vide pour ne pas changer)" : <>Mot de passe <span className="text-danger">*</span></>}
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    value={form.password}
-                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                    placeholder="Mot de passe"
-                    className="flex-1 font-mono"
-                  />
-                  <Button variant="outline" size="sm" icon={<Key size={16} />} onClick={generatePassword}>Générer</Button>
-                </div>
-              </div>
-
-              {/* Département / Date embauche */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-1">Département</label>
-                  <Input value={form.departement} onChange={e => setForm(f => ({ ...f, departement: e.target.value }))} placeholder="Informatique" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-1">Date d'embauche</label>
-                  <Input type="date" value={form.dateEmbauche} onChange={e => setForm(f => ({ ...f, dateEmbauche: e.target.value }))} />
-                </div>
-              </div>
-
-              {/* IBAN / Rôle */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-1">IBAN (optionnel)</label>
-                  <Input value={form.iban} onChange={e => setForm(f => ({ ...f, iban: e.target.value }))} placeholder="FR76..." />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-1">Rôle</label>
-                  <select
-                    value={form.role}
-                    onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">Sélectionner un rôle</option>
-                    {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* Actif */}
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={form.isActive}
-                  onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))}
-                  className="w-4 h-4 accent-primary-500"
-                />
-                <label htmlFor="isActive" className="text-sm font-medium text-slate-700">Compte actif</label>
-              </div>
+              </section>
             </div>
-            <div className="p-6 border-t border-slate-200 flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setShowForm(false)}>Annuler</Button>
-              <Button loading={isSubmitting} icon={<CheckCircle size={16} />} onClick={handleSubmitForm}>
-                {editingEmploye ? "Enregistrer" : "Créer l'employé"}
+            
+            {/* Footer sticky */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex justify-end gap-3 z-10">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowForm(false)}
+                className="rounded-xl border-gray-200"
+              >
+                Annuler
+              </Button>
+              <Button 
+                loading={isSubmitting} 
+                icon={<CheckCircle size={16} />} 
+                onClick={handleSubmitForm}
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6"
+              >
+                {editingEmploye ? "Enregistrer les modifications" : "Créer l'employé"}
               </Button>
             </div>
           </div>
@@ -395,35 +615,222 @@ export default function RHEmployesPage() {
       {/* Modal Voir Employé */}
       {showViewModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50 rounded-t-2xl">
-              <div className="flex items-center gap-3">
-                <Avatar nom={showViewModal.nom} prenom={showViewModal.prenom} size="md" />
-                <div>
-                  <h2 className="text-xl font-bold text-slate-800">{showViewModal.prenom} {showViewModal.nom}</h2>
-                  <p className="text-sm text-slate-500">{showViewModal.matricule}</p>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 duration-300">
+            
+            {/* Header avec dégradé */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 flex-shrink-0">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  {/* Avatar */}
+                  {(showViewModal as any).photo_profil ? (
+                    <img
+                      src={(showViewModal as any).photo_profil}
+                      alt={`${showViewModal.prenom} ${showViewModal.nom}`}
+                      className="w-16 h-16 rounded-2xl object-cover ring-4 ring-white/30"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-white font-bold text-2xl ring-4 ring-white/30">
+                      {showViewModal.prenom?.[0] || ''}{showViewModal.nom?.[0] || ''}
+                    </div>
+                  )}
+                  <div>
+                    <h2 className="text-xl font-bold text-white">
+                      {showViewModal.prenom} {showViewModal.nom}
+                    </h2>
+                    <p className="text-blue-100 text-sm mt-0.5">
+                      {(showViewModal as any).departement?.nom || (showViewModal as any).departement || 'Sans département'}
+                    </p>
+                    <span className={`
+                      inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-semibold
+                      ${showViewModal.statut === 'ACTIF'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'}
+                    `}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${showViewModal.statut === 'ACTIF' ? 'bg-green-500' : 'bg-red-500'}`} />
+                      {showViewModal.statut === 'ACTIF' ? 'Actif' : 'Inactif'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowViewModal(null)}
+                  className="text-white/70 hover:text-white hover:bg-white/20 p-2 rounded-xl transition-all duration-200"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            
+            {/* Corps — scrollable */}
+            <div className="flex-1 overflow-y-auto">
+              
+              {/* Section Informations personnelles */}
+              <div className="px-6 py-5 border-b border-gray-100">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                  Informations personnelles
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg flex-shrink-0 mt-0.5">📧</span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400 font-medium">Email</p>
+                      <p className="text-sm text-gray-800 font-medium mt-0.5 truncate">{showViewModal.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg flex-shrink-0 mt-0.5">📱</span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400 font-medium">Téléphone</p>
+                      <p className="text-sm text-gray-800 font-medium mt-0.5">{(showViewModal as any).telephone || '—'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg flex-shrink-0 mt-0.5">🎂</span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400 font-medium">Date de naissance</p>
+                      <p className="text-sm text-gray-800 font-medium mt-0.5">
+                        {(showViewModal as any).date_naissance 
+                          ? formatDate((showViewModal as any).date_naissance) 
+                          : '—'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg flex-shrink-0 mt-0.5">🏦</span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400 font-medium">IBAN</p>
+                      <p className="text-sm text-gray-800 font-medium mt-0.5">
+                        {showViewModal.rib ? `****${showViewModal.rib.slice(-4)}` : '—'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <button onClick={() => setShowViewModal(null)} className="p-2 hover:bg-slate-200 rounded-lg"><X size={20} /></button>
-            </div>
-            <div className="p-6 space-y-4">
-              {[
-                { label: "Email", value: showViewModal.email },
-                { label: "Statut", value: <Badge variant={showViewModal.statut === "ACTIF" ? "green" : "gray"}>{showViewModal.statut}</Badge> },
-                { label: "Type contrat", value: showViewModal.typeContrat },
-                { label: "Date embauche", value: showViewModal.dateEmbauche ? formatDate(showViewModal.dateEmbauche) : "-" },
-                { label: "Congés annuels", value: `${showViewModal.congesRestants?.annuels ?? 0} jours restants` },
-                { label: "IBAN", value: showViewModal.rib ? "••••••••" + showViewModal.rib.slice(-4) : "-" },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between items-center py-2 border-b border-slate-100 last:border-0">
-                  <span className="text-slate-500 text-sm">{label}</span>
-                  <span className="font-medium text-sm">{value}</span>
+              
+              {/* Section Informations professionnelles */}
+              <div className="px-6 py-5 border-b border-gray-100">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                  Informations professionnelles
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg flex-shrink-0 mt-0.5">🏢</span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400 font-medium">Département</p>
+                      <p className="text-sm text-gray-800 font-medium mt-0.5">
+                        {(showViewModal as any).departement?.nom || (showViewModal as any).departement || '—'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg flex-shrink-0 mt-0.5">📅</span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400 font-medium">Date d'embauche</p>
+                      <p className="text-sm text-gray-800 font-medium mt-0.5">
+                        {showViewModal.dateEmbauche 
+                          ? formatDate(showViewModal.dateEmbauche) 
+                          : '—'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg flex-shrink-0 mt-0.5">🎭</span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400 font-medium">Rôle</p>
+                      <p className="text-sm text-gray-800 font-medium mt-0.5">
+                        {(showViewModal as any).roles?.[0]?.name || (showViewModal as any).role || '—'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg flex-shrink-0 mt-0.5">📋</span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400 font-medium">Contrat actif</p>
+                      <p className="text-sm text-gray-800 font-medium mt-0.5">
+                        {(showViewModal as any).contrat_actif?.type || 'Aucun contrat actif'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </div>
+              
+              {/* Section Solde congés */}
+              <div className="px-6 py-5 border-b border-gray-100">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                  Solde de congés
+                </h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Congés annuels', 
+                      value: (showViewModal as any).solde_conges?.annuels ?? (showViewModal.congesRestants?.annuels ?? '—'), 
+                      color: 'blue' },
+                    { label: 'Congés maladie', 
+                      value: (showViewModal as any).solde_conges?.maladie ?? '—', 
+                      color: 'green' },
+                    { label: 'Congés exceptionnels', 
+                      value: (showViewModal as any).solde_conges?.exceptionnels ?? '—', 
+                      color: 'purple' },
+                  ].map(item => (
+                    <div key={item.label} className={`bg-${item.color}-50 rounded-xl p-4 text-center`}>
+                      <p className={`text-2xl font-bold text-${item.color}-600`}>
+                        {item.value}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Section Historique congés récents */}
+              {(showViewModal as any).conges_recents && (showViewModal as any).conges_recents.length > 0 ? (
+                <div className="px-6 py-5">
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                    Congés récents
+                  </h3>
+                  <div className="space-y-2">
+                    {(showViewModal as any).conges_recents.slice(0, 3).map((conge: any) => (
+                      <div key={conge.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">{conge.type}</p>
+                          <p className="text-xs text-gray-400">
+                            {formatDate(conge.date_debut)} → {formatDate(conge.date_fin)}
+                          </p>
+                        </div>
+                        <Badge variant={conge.etat?.includes('VALIDE') ? 'green' : conge.etat?.includes('REFUSE') ? 'red' : 'yellow'}>
+                          {conge.etat}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="px-6 py-5">
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                    Congés récents
+                  </h3>
+                  <p className="text-sm text-gray-400 italic">Aucun congé récent</p>
+                </div>
+              )}
             </div>
-            <div className="p-6 border-t border-slate-200 flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setShowViewModal(null)}>Fermer</Button>
-              <Button icon={<Edit size={16} />} onClick={() => { setShowViewModal(null); openEditForm(showViewModal); }}>Modifier</Button>
+            
+            {/* Footer actions */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center flex-shrink-0">
+              <p className="text-xs text-gray-400">
+                Créé le {(showViewModal as any).created_at ? formatDate((showViewModal as any).created_at) : '—'}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowViewModal(null)}
+                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-100 transition-all duration-200"
+                >
+                  Fermer
+                </button>
+                <button
+                  onClick={() => { setShowViewModal(null); openEditForm(showViewModal); }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-all duration-200"
+                >
+                  ✏️ Modifier
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, Badge, Button, Avatar } from "@/components
 import { cn, formatDate } from "@/lib/utils";
 import type { Employe } from "@/types";
 import toast from "react-hot-toast";
+import { managerService } from "@/lib/services";
 
 interface CongeHistorique {
   id: string;
@@ -21,7 +22,27 @@ interface CongeHistorique {
   statut: string;
 }
 
-interface EmployeDetail extends Employe {
+interface EmployeDetail {
+  id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  matricule?: string;
+  telephone?: string;
+  genre?: string;
+  statut: string;
+  dateEmbauche?: string;
+  dateNaissance?: string;
+  nationalite?: string;
+  adresse?: {
+    rue?: string;
+    ville?: string;
+    codePostal?: string;
+    pays?: string;
+  };
+  departementId?: string;
+  posteId?: string;
+  typeContrat?: string;
   contratActif?: {
     type: string;
     dateDebut: string;
@@ -47,62 +68,47 @@ export default function ManagerEmployeDetailPage() {
       setIsLoading(true);
       setIsError(false);
 
-      // TODO: Remplacer par l'appel API réel
-      // const response = await managerService.getEmployeDetail(employeId);
-      
-      // Données simulées
-      const mockData: EmployeDetail = {
-        id: employeId,
-        nom: "Martin",
-        prenom: "Sophie",
-        email: "sophie.martin@company.com",
-        matricule: "EMP001",
-        telephone: "0612345678",
-        genre: "FEMININ",
-        dateNaissance: "1990-05-15",
-        nationalite: "Française",
-        adresse: { rue: "12 Rue de Paris", ville: "Paris", codePostal: "75001", pays: "France" },
-        statut: "ACTIF",
-        dateEmbauche: "2022-03-15",
-        departementId: "1",
-        posteId: "1",
-        typeContrat: "CDI",
-        salaireBase: 3500,
-        rib: "",
-        congesRestants: { annuels: 15, maladie: 5, exceptionnels: 2 },
-        createdAt: "2022-03-15",
-        updatedAt: "2025-04-01",
-        presentAujourdhui: true,
-        contratActif: {
-          type: "CDI",
-          dateDebut: "2022-03-15",
-          etat: "ACTIF"
-        },
-        conges: [
-          {
-            id: "1",
-            type: "ANNUEL",
-            dateDebut: "2025-06-15",
-            dateFin: "2025-06-20",
-            nombreJours: 6,
-            statut: "APPROUVE"
-          },
-          {
-            id: "2",
-            type: "MALADIE",
-            dateDebut: "2025-03-10",
-            dateFin: "2025-03-12",
-            nombreJours: 3,
-            statut: "APPROUVE"
-          }
-        ]
-      };
+      const res = await managerService.getMembreDetail(employeId);
 
-      setEmploye(mockData);
-    } catch (error) {
+      if (res.success) {
+        const data = res.data;
+        // Mapping API → EmployeDetail
+        const membre: EmployeDetail = {
+          id: data.id,
+          nom: data.nom,
+          prenom: data.prenom,
+          email: data.email,
+          matricule: data.matricule || '',
+          telephone: data.telephone,
+          statut: data.statut,
+          dateEmbauche: (data as any).date_embauche,
+          dateNaissance: (data as any).date_naissance,
+          departementId: data.departement?.id || '',
+          typeContrat: (data as any).contrat_actif?.type,
+          presentAujourdhui: data.statut === 'ACTIF',
+          contratActif: (data as any).contrat_actif ? {
+            type: (data as any).contrat_actif.type,
+            dateDebut: (data as any).contrat_actif.date_debut,
+            dateFin: (data as any).contrat_actif.date_fin,
+            etat: (data as any).contrat_actif.etat,
+          } : undefined,
+          conges: ((data as any).conges || []).map((c: any) => ({
+            id: c.id,
+            type: c.type,
+            dateDebut: c.date_debut,
+            dateFin: c.date_fin,
+            nombreJours: c.nombre_jours,
+            statut: c.statut,
+          })),
+        };
+        setEmploye(membre);
+      } else {
+        throw new Error('Erreur lors du chargement des données');
+      }
+    } catch (error: any) {
       console.error("Erreur chargement employé:", error);
       setIsError(true);
-      toast.error("Impossible de charger les données de l'employé");
+      toast.error(error?.message || "Impossible de charger les données de l'employé");
     } finally {
       setIsLoading(false);
     }
@@ -191,7 +197,9 @@ export default function ManagerEmployeDetailPage() {
                 <Badge variant={employe.statut === "ACTIF" ? "green" : "gray"}>
                   {employe.statut}
                 </Badge>
-                <Badge variant="blue">{employe.typeContrat}</Badge>
+                {employe.typeContrat && (
+                  <Badge variant="blue">{employe.typeContrat}</Badge>
+                )}
               </div>
             </div>
           </div>

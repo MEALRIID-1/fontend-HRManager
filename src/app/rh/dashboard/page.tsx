@@ -224,24 +224,48 @@ export default function RHDashboardPage() {
               <BarChart3 size={20} className="text-primary-500" />
               Répartition des congés par type
             </CardTitle>
-            <SimplePieChart 
-              data={congesParTypeData}
-              height={250}
-              colors={["#0ea5e9", "#22c55e", "#f59e0b", "#8b5cf6", "#ec4899"]}
-            />
+            {chartsLoading ? (
+              <div className="h-[250px] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                <span className="ml-2 text-slate-500">Chargement des données...</span>
+              </div>
+            ) : !congesParTypeData || congesParTypeData.length === 0 ? (
+              <div className="h-[250px] flex flex-col items-center justify-center text-slate-400">
+                <BarChart3 size={48} className="mb-2 opacity-50" />
+                <p>Aucune donnée disponible</p>
+              </div>
+            ) : (
+              <SimplePieChart 
+                data={congesParTypeData}
+                height={250}
+                colors={["#0ea5e9", "#22c55e", "#f59e0b", "#8b5cf6", "#ec4899"]}
+              />
+            )}
           </Card>
           <Card className="p-6">
             <CardTitle className="flex items-center gap-2 mb-4">
               <BarChart3 size={20} className="text-primary-500" />
               Évolution des effectifs (6 mois)
             </CardTitle>
-            <SimpleLineChart 
-              data={evolutionData}
-              dataKey="employes"
-              color="#0ea5e9"
-              height={250}
-              showArea={true}
-            />
+            {chartsLoading ? (
+              <div className="h-[250px] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                <span className="ml-2 text-slate-500">Chargement des données...</span>
+              </div>
+            ) : !evolutionData || evolutionData.length === 0 ? (
+              <div className="h-[250px] flex flex-col items-center justify-center text-slate-400">
+                <BarChart3 size={48} className="mb-2 opacity-50" />
+                <p>Aucune donnée disponible</p>
+              </div>
+            ) : (
+              <SimpleLineChart 
+                data={evolutionData}
+                dataKey="employes"
+                color="#0ea5e9"
+                height={250}
+                showArea={true}
+              />
+            )}
           </Card>
         </div>
         </div> {/* Fin rh-dashboard-content */}

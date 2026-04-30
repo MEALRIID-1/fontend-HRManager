@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, Badge, Button } from "@/components/ui";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Users, CalendarDays, FileText, Zap, AlertTriangle, ArrowRight, BarChart3, Loader2, PieChart } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { rapportService, leaveService } from "@/lib/services";
+import { rapportService, leaveService, auditService } from "@/lib/services";
 import { SimpleLineChart, SimplePieChart, MultiBarChart } from "@/components/charts";
 import { ExportPdfButton } from "@/components/export/ExportPdfButton";
 import toast from "react-hot-toast";
@@ -53,6 +53,12 @@ export default function DirecteurDashboardPage() {
   const [congesData, setCongesData] = useState<LeavesChartData[]>([]);
   const [chartsLoading, setChartsLoading] = useState(true);
   
+  // Historique d'activité
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsPage, setLogsPage] = useState(1);
+  const [logsMeta, setLogsMeta] = useState<any>(null);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,6 +99,9 @@ export default function DirecteurDashboardPage() {
           if (chartsData?.leaves) setCongesData(chartsData.leaves);
         }
         setChartsLoading(false);
+        
+        // Charger l'historique d'activité
+        loadActivityLogs();
       } catch (err: any) {
         console.error("Erreur dashboard:", err);
         setError(err?.response?.data?.message || err?.message || "Erreur lors du chargement");
@@ -104,6 +113,23 @@ export default function DirecteurDashboardPage() {
 
     loadDashboardData();
   }, []);
+
+  // Charger l'historique d'activité
+  const loadActivityLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const res = await auditService.getLogs({ page: logsPage, limit: 10 });
+      if (res.success) {
+        const data = res.data as any;
+        setActivityLogs(data?.data || data || []);
+        setLogsMeta(data?.meta || null);
+      }
+    } catch (err: any) {
+      console.error("Erreur chargement logs:", err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -249,25 +275,49 @@ export default function DirecteurDashboardPage() {
               <BarChart3 size={20} className="text-primary-500" />
               Évolution effectifs 12 mois
             </CardTitle>
-            <MultiBarChart 
-              data={evolutionData}
-              bars={[
-                { dataKey: "embauches", color: "#22c55e", name: "Embauches" },
-                { dataKey: "departs", color: "#ef4444", name: "Départs" },
-              ]}
-              height={250}
-            />
+            {chartsLoading ? (
+              <div className="h-[250px] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                <span className="ml-2 text-slate-500">Chargement...</span>
+              </div>
+            ) : !evolutionData || evolutionData.length === 0 ? (
+              <div className="h-[250px] flex flex-col items-center justify-center text-slate-400">
+                <BarChart3 size={48} className="mb-2 opacity-50" />
+                <p>Aucune donnée disponible</p>
+              </div>
+            ) : (
+              <MultiBarChart 
+                data={evolutionData}
+                bars={[
+                  { dataKey: "embauches", color: "#22c55e", name: "Embauches" },
+                  { dataKey: "departs", color: "#ef4444", name: "Départs" },
+                ]}
+                height={250}
+              />
+            )}
           </Card>
           <Card className="p-6">
             <CardTitle className="flex items-center gap-2 mb-4">
               <PieChart size={20} className="text-primary-500" />
               Répartition par département
             </CardTitle>
-            <SimplePieChart 
-              data={repartitionDeptData}
-              height={250}
-              colors={["#0ea5e9", "#22c55e", "#f59e0b", "#8b5cf6", "#ec4899"]}
-            />
+            {chartsLoading ? (
+              <div className="h-[250px] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                <span className="ml-2 text-slate-500">Chargement...</span>
+              </div>
+            ) : !repartitionDeptData || repartitionDeptData.length === 0 ? (
+              <div className="h-[250px] flex flex-col items-center justify-center text-slate-400">
+                <PieChart size={48} className="mb-2 opacity-50" />
+                <p>Aucune donnée disponible</p>
+              </div>
+            ) : (
+              <SimplePieChart 
+                data={repartitionDeptData}
+                height={250}
+                colors={["#0ea5e9", "#22c55e", "#f59e0b", "#8b5cf6", "#ec4899"]}
+              />
+            )}
           </Card>
         </div>
 
@@ -277,14 +327,114 @@ export default function DirecteurDashboardPage() {
             <CalendarDays size={20} className="text-primary-500" />
             Demandes de congés par type
           </CardTitle>
-          <MultiBarChart 
-            data={congesData}
-            bars={[
-              { dataKey: "demandes", color: "#0ea5e9", name: "Demandes" },
-              { dataKey: "approuves", color: "#22c55e", name: "Approuvées" },
-            ]}
-            height={250}
-          />
+          {chartsLoading ? (
+            <div className="h-[250px] flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+              <span className="ml-2 text-slate-500">Chargement...</span>
+            </div>
+          ) : !congesData || congesData.length === 0 ? (
+            <div className="h-[250px] flex flex-col items-center justify-center text-slate-400">
+              <BarChart3 size={48} className="mb-2 opacity-50" />
+              <p>Aucune donnée disponible</p>
+            </div>
+          ) : (
+            <MultiBarChart 
+              data={congesData}
+              bars={[
+                { dataKey: "demandes", color: "#0ea5e9", name: "Demandes" },
+                { dataKey: "approuves", color: "#22c55e", name: "Approuvées" },
+              ]}
+              height={250}
+            />
+          )}
+        </Card>
+
+        {/* Section Historique d'activité */}
+        <Card className="p-6">
+          <CardTitle className="flex items-center gap-2 mb-4">
+            <FileText size={20} className="text-primary-500" />
+            Historique d'activité
+          </CardTitle>
+          
+          {logsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-500 mr-2" />
+              <span className="text-slate-500">Chargement...</span>
+            </div>
+          ) : activityLogs.length === 0 ? (
+            <div className="text-center py-8 text-slate-400">
+              <p>Aucun historique d'activité disponible</p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Heure</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Utilisateur</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Action</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Entité</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Détails</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {activityLogs.map((log, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 text-slate-700">
+                          {log.created_at ? new Date(log.created_at).toLocaleDateString('fr-FR') : '-'}
+                        </td>
+                        <td className="px-4 py-3 text-slate-700">
+                          {log.created_at ? new Date(log.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-slate-800">
+                          {log.user?.nom} {log.user?.prenom}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant={log.action?.includes('SUPPR') ? 'red' : log.action?.includes('CREATION') ? 'green' : 'blue'}>
+                            {log.action}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">{log.entity_type}</td>
+                        <td className="px-4 py-3 text-slate-600 truncate max-w-xs">{log.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Pagination */}
+              {logsMeta && logsMeta.last_page > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
+                  <p className="text-sm text-slate-600">
+                    Page {logsMeta.current_page} sur {logsMeta.last_page}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => { setLogsPage(p => Math.max(1, p - 1)); loadActivityLogs(); }}
+                      disabled={logsPage === 1}
+                    >
+                      Précédent
+                    </Button>
+                    <span className="text-sm text-slate-600 px-2">
+                      {logsPage} / {logsMeta.last_page}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => { setLogsPage(p => Math.min(logsMeta.last_page, p + 1)); loadActivityLogs(); }}
+                      disabled={logsPage === logsMeta.last_page}
+                    >
+                      Suivant
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </Card>
         </div> {/* Fin dashboard-content */}
       </div>

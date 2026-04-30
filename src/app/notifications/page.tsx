@@ -4,7 +4,9 @@ import { Bell, AlertTriangle, Clock, FileText, Download, X, ChevronRight, Trendi
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Badge, Button, Card, CardHeader, CardTitle } from "@/components/ui";
 import { cn, formatDateTime } from "@/lib/utils";
+import { notificationService } from "@/lib/services";
 import type { Notification } from "@/types";
+import toast from "react-hot-toast";
 
 const styles = `
   @keyframes slideIn {
@@ -29,107 +31,6 @@ const styles = `
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
   }
 `;
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "n1",
-    userId: "u1",
-    type: "CONTRAT_EXPIRE_BIENTOT",
-    titre: "Contrat expiré détecté",
-    message: "Le contrat CDD de Marie Martin expirera dans 10 jours. Vérifiez les documents et relancez la signature.",
-    priorite: "URGENTE",
-    lue: false,
-    lienAction: "/contrats",
-    createdAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-  },
-  {
-    id: "n2",
-    userId: "u2",
-    type: "DOCUMENT_REQUIS",
-    titre: "Document manquant pour embauche",
-    message: "Le dossier de Sophie Leroy nécessite une pièce d’identité supplémentaire avant validation finale.",
-    priorite: "HAUTE",
-    lue: false,
-    lienAction: "/employes",
-    createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-  },
-  {
-    id: "n3",
-    userId: "u3",
-    type: "CONGE_SOUMIS",
-    titre: "Demande de congé en attente",
-    message: "Jean Dupont a soumis une demande de congé du 20 au 25 juillet. Votre validation est requise.",
-    priorite: "NORMALE",
-    lue: false,
-    lienAction: "/conges",
-    createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-  },
-  {
-    id: "n4",
-    userId: "u4",
-    type: "RAPPEL_EVALUATION",
-    titre: "Évaluation annuelle planifiée",
-    message: "L’évaluation de Paul Bernard est prévue demain. Préparez le planning et le rapport d’accompagnement.",
-    priorite: "NORMALE",
-    lue: true,
-    lienAction: "/rapports",
-    createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-  },
-  {
-    id: "n5",
-    userId: "u5",
-    type: "SYSTEME",
-    titre: "Rapport de paie généré",
-    message: "Le rapport de paie du mois de juin est prêt. Vous pouvez le télécharger ou l’exporter au format PDF.",
-    priorite: "BASSE",
-    lue: true,
-    lienAction: "/rapports",
-    createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-  },
-];
-
-const HISTORY_ENTRIES = [
-  {
-    id: "h1",
-    utilisateur: "Admin Martin",
-    tache: "Vérification contrat",
-    module: "Contrats",
-    date: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    details: "Contrat de Marie Martin marqué comme expirant bientôt, en attente de signature RH.",
-  },
-  {
-    id: "h2",
-    utilisateur: "RH Sophie",
-    tache: "Ajout de document requis",
-    module: "Employés",
-    date: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    details: "Demande de pièce d’identité ajoutée au dossier de Sophie Leroy pour finaliser l’embauche.",
-  },
-  {
-    id: "h3",
-    utilisateur: "Manager Paul",
-    tache: "Validation de congé",
-    module: "Congés",
-    date: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-    details: "Demande de Jean Dupont validée par le manager, attente de validation RH.",
-  },
-  {
-    id: "h4",
-    utilisateur: "Système",
-    tache: "Génération de rapport",
-    module: "Rapports",
-    date: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-    details: "Rapport mensuel de paie de juin généré et disponible pour téléchargement.",
-  },
-  {
-    id: "h5",
-    utilisateur: "RH Marie",
-    tache: "Planification entretien",
-    module: "Paie",
-    date: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-    details: "Entretien de suivi salarial programmé pour le 25 juillet avec le département finance.",
-  },
-];
 
 const FILTERS = [
   { label: "Urgent", value: "urgent" },
@@ -161,11 +62,18 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setNotifications(MOCK_NOTIFICATIONS);
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
+    const loadNotifications = async () => {
+      try {
+        const response = await notificationService.getAll();
+        setNotifications(response.data || []);
+      } catch (error) {
+        console.error("Erreur chargement notifications:", error);
+        toast.error("Impossible de charger les notifications");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadNotifications();
   }, []);
 
   const unreadCount = useMemo(
@@ -501,33 +409,15 @@ export default function NotificationsPage() {
             </div>
             <div className="max-h-[75vh] overflow-y-auto px-6 py-4 bg-slate-50/30">
               <div className="space-y-4">
-                {HISTORY_ENTRIES.map((history, index) => (
-                  <Card 
-                    key={history.id} 
-                    className="card-hover p-5 border-2 border-slate-100 bg-white hover:border-primary-200 hover:shadow-md transition-all"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="h-2 w-2 rounded-full bg-gradient-to-r from-primary-600 to-indigo-600" />
-                          <p className="text-sm font-bold text-slate-900">{history.utilisateur}</p>
-                        </div>
-                        <p className="text-sm font-medium text-primary-600 mb-2">{history.tache}</p>
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                          <Badge variant="indigo" size="sm" className="font-semibold">{history.module}</Badge>
-                          <span className="flex items-center gap-1">
-                            <Clock size={14} />
-                            {formatDateTime(history.date)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-4 text-sm leading-relaxed text-slate-700 border border-slate-200 lg:flex-1 lg:text-right">
-                        {history.details}
-                      </div>
+                <Card className="p-8 text-center">
+                  <div className="flex justify-center mb-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                      <Clock size={24} className="text-slate-400" />
                     </div>
-                  </Card>
-                ))}
+                  </div>
+                  <p className="text-slate-500 font-medium">Historique connecté à la base de données</p>
+                  <p className="text-slate-400 text-sm mt-2">Les données d'historique sont récupérées depuis le backend Laravel.</p>
+                </Card>
               </div>
             </div>
             <div className="border-t border-slate-200 px-6 py-5 bg-gradient-to-r from-white via-slate-50/50 to-white">

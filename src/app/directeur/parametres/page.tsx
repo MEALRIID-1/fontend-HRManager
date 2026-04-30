@@ -2,45 +2,62 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-  Settings, Users, Shield, Key, FileText, Camera, Eye, EyeOff,
-  Search, Trash2, Plus, RefreshCw, Download, Filter, ChevronLeft, ChevronRight,
-  CheckCircle, XCircle, AlertCircle, User as UserIcon
+  User, Shield, Key, Users, FileText, Camera, Eye, EyeOff,
+  Search, Trash2, Plus, RefreshCw, Download, ChevronLeft, ChevronRight,
+  CheckCircle, XCircle, AlertCircle
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Card, CardHeader, CardTitle, Button, Badge, Avatar, Input } from "@/components/ui";
+import { Card, CardHeader, CardTitle, Button, Badge, Input } from "@/components/ui";
+import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
 import { employeeService, employeService, rbacService, auditService } from "@/lib/services";
 import type { Employe } from "@/types";
 import toast from "react-hot-toast";
 
-type TabType = "profil" | "roles" | "permissions" | "attribution" | "audit";
+// Onglets disponibles
+const ONGLETS = [
+  { id: "profil", label: "Mon Profil", icon: "👤" },
+  { id: "roles", label: "Rôles", icon: "🛡️" },
+  { id: "permissions", label: "Permissions", icon: "🔑" },
+  { id: "attribution", label: "Attribution", icon: "👥" },
+  { id: "audit", label: "Audit Log", icon: "📋" },
+] as const;
+
+type TabType = typeof ONGLETS[number]["id"];
 
 export default function DirecteurParametresPage() {
   const [activeTab, setActiveTab] = useState<TabType>("profil");
 
   return (
-    <DashboardLayout title="Paramètres">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar */}
-        <Card className="lg:col-span-1 h-fit">
-          <div className="p-2 space-y-1">
-            <TabButton active={activeTab === "profil"} onClick={() => setActiveTab("profil")} icon={<Users size={16} />}>Mon Profil Admin</TabButton>
-            <TabButton active={activeTab === "roles"} onClick={() => setActiveTab("roles")} icon={<Shield size={16} />}>Gestion des Rôles</TabButton>
-            <TabButton active={activeTab === "permissions"} onClick={() => setActiveTab("permissions")} icon={<Key size={16} />}>Gestion des Permissions</TabButton>
-            <TabButton active={activeTab === "attribution"} onClick={() => setActiveTab("attribution")} icon={<Settings size={16} />}>Attribution Rôles & Permissions</TabButton>
-            <TabButton active={activeTab === "audit"} onClick={() => setActiveTab("audit")} icon={<FileText size={16} />}>Audit Log</TabButton>
-          </div>
-        </Card>
+    <DashboardLayout title="Paramètres" subtitle="Configuration système et profil administrateur">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Navigation onglets — style pill */}
+        <div className="flex gap-2 p-1.5 bg-gray-100 rounded-2xl w-fit mb-8 flex-wrap">
+          {ONGLETS.map((onglet) => (
+            <button
+              key={onglet.id}
+              onClick={() => setActiveTab(onglet.id)}
+              className={`
+                flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium
+                transition-all duration-200 whitespace-nowrap
+                ${activeTab === onglet.id
+                  ? "bg-white shadow-sm text-blue-600 font-semibold"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-200"}
+              `}
+            >
+              <span>{onglet.icon}</span>
+              {onglet.label}
+            </button>
+          ))}
+        </div>
 
         {/* Content */}
-        <div className="lg:col-span-3">
-          {activeTab === "profil" && <ProfilTab />}
-          {activeTab === "roles" && <RolesTab />}
-          {activeTab === "permissions" && <PermissionsTab />}
-          {activeTab === "attribution" && <AttributionTab />}
-          {activeTab === "audit" && <AuditTab />}
-        </div>
+        {activeTab === "profil" && <OngletProfil />}
+        {activeTab === "roles" && <OngletRoles />}
+        {activeTab === "permissions" && <OngletPermissions />}
+        {activeTab === "attribution" && <OngletAttribution />}
+        {activeTab === "audit" && <OngletAudit />}
       </div>
     </DashboardLayout>
   );
@@ -49,19 +66,6 @@ export default function DirecteurParametresPage() {
 // ─────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────
-function TabButton({ children, active, onClick, icon }: {
-  children: React.ReactNode; active: boolean; onClick: () => void; icon: React.ReactNode;
-}) {
-  return (
-    <button onClick={onClick} className={cn(
-      "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-      active ? "bg-primary-500 text-white" : "text-slate-600 hover:bg-slate-100"
-    )}>
-      {icon}{children}
-    </button>
-  );
-}
-
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -73,10 +77,41 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-300 text-sm";
 
+function FormField({ label, name, type = "text", value, onChange, className = "" }: {
+  label: string; name: string; type?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; className?: string;
+}) {
+  return (
+    <div className={className}>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+      />
+    </div>
+  );
+}
+
+function PasswordStrengthBar({ password }: { password: string }) {
+  const strength = password.length < 8 ? 0 : password.length < 12 ? 1 : /[A-Z]/.test(password) && /[0-9]/.test(password) ? 3 : 2;
+  const colors = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-green-500"];
+  const labels = ["Très faible", "Faible", "Moyen", "Fort"];
+  return (
+    <div className="mt-2">
+      <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+        <div className={`h-full ${colors[strength]} transition-all duration-300`} style={{ width: `${(strength + 1) * 25}%` }} />
+      </div>
+      <p className="text-xs text-gray-500 mt-1">{labels[strength]}</p>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────
 // ONGLET PROFIL
 // ─────────────────────────────────────────────────────────
-function ProfilTab() {
+function OngletProfil() {
   const { user, updateUser } = useAuthStore();
   const [profile, setProfile] = useState<Employe | null>(null);
   const [saving, setSaving] = useState(false);
@@ -155,7 +190,7 @@ function ProfilTab() {
         <CardTitle className="mb-6">Mon Profil Admin</CardTitle>
         <div className="flex items-center gap-5 mb-6">
           <div className="relative">
-            <Avatar nom={user?.nom} prenom={user?.prenom} size="lg" src={avatarSrc ?? undefined} />
+            <Avatar src={avatarSrc ?? undefined} fallback={`${user?.prenom} ${user?.nom}`} size="lg" />
             <button
               onClick={() => fileRef.current?.click()}
               className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary-500 text-white rounded-full flex items-center justify-center hover:bg-primary-600 shadow"
@@ -225,7 +260,7 @@ function ProfilTab() {
 // ─────────────────────────────────────────────────────────
 // ONGLET RÔLES
 // ─────────────────────────────────────────────────────────
-function RolesTab() {
+function OngletRoles() {
   const [roles, setRoles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -316,7 +351,7 @@ function RolesTab() {
 // ─────────────────────────────────────────────────────────
 // ONGLET PERMISSIONS
 // ─────────────────────────────────────────────────────────
-function PermissionsTab() {
+function OngletPermissions() {
   const [byModule, setByModule] = useState<Record<string, { id: string; name: string }[]>>({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -359,7 +394,7 @@ function PermissionsTab() {
 // ─────────────────────────────────────────────────────────
 // ONGLET ATTRIBUTION RÔLES & PERMISSIONS
 // ─────────────────────────────────────────────────────────
-function AttributionTab() {
+function OngletAttribution() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [permissions, setPermissions] = useState<any[]>([]);
@@ -434,7 +469,7 @@ function AttributionTab() {
                     onClick={() => { setSelectedUser(emp); setSearch(`${emp.prenom} ${emp.nom}`); }}
                     className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 text-left text-sm"
                   >
-                    <Avatar nom={emp.nom} prenom={emp.prenom} size="xs" />
+                    <Avatar fallback={`${emp.prenom} ${emp.nom}`} size="xs" />
                     {emp.prenom} {emp.nom}
                     <span className="text-slate-400 text-xs ml-auto">{emp.email}</span>
                   </button>
@@ -488,7 +523,7 @@ function AttributionTab() {
 // ─────────────────────────────────────────────────────────
 // ONGLET AUDIT LOG
 // ─────────────────────────────────────────────────────────
-function AuditTab() {
+function OngletAudit() {
   const [logs, setLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);

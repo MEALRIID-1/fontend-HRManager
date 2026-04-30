@@ -145,7 +145,7 @@ export default function Sidebar() {
             item={item}
             active={isActive(item.href)}
             collapsed={sidebarCollapsed}
-            badge={(item.href === "/notifications" || item.href === "/employe/notifications") ? nbNotifsNonLues : undefined}
+            badge={item.href.includes("/notifications") ? nbNotifsNonLues : undefined}
           />
         ))}
       </nav>

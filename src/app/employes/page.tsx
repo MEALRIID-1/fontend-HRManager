@@ -10,38 +10,12 @@ import AddEmployeeModal from "@/components/employes/AddEmployeeModal";
 import EmployeeDetailsModal from "@/components/employes/EmployeeDetailsModal";
 import EmployeeModal from "@/components/employes/AddEmployeeModal";
 import { useToastStore } from "@/store/toast.store";
+import { employeService } from "@/lib/services";
 import {
   cn, formatDate, STATUT_EMPLOYE_LABELS, getStatutEmployeVariant,
   TYPE_CONTRAT_LABELS,
 } from "@/lib/utils";
 import type { Employe, StatutEmploye, TypeContrat } from "@/types";
-
-// ── Mock employees ─────────────────────────────────────────────────────────
-const MOCK_EMPLOYES: Employe[] = Array.from({ length: 12 }, (_, i) => ({
-  id: `e${i + 1}`,
-  matricule: `EMP${String(i + 1).padStart(3, "0")}`,
-  nom: ["Dupont","Martin","Bernard","Leroy","Moreau","Simon","Laurent","Lefebvre","Michel","Durand","Petit","Robert"][i],
-  prenom: ["Jean","Marie","Paul","Sophie","Alice","Lucas","Emma","Thomas","Léa","Nicolas","Julie","Antoine"][i],
-  email: `employe${i + 1}@rh.cm`,
-  emailPro: `employe${i + 1}@entreprise.cm`,
-  telephone: `+237 6${(i + 1).toString().padStart(2, "0")}${(500000 + i * 80000).toString().padStart(7, "0")}`,
-  genre: i % 3 === 0 ? "FEMININ" : "MASCULIN",
-  dateNaissance: "1990-01-01",
-  nationalite: "Camerounaise",
-  adresse: { rue: "Rue principale", ville: "Yaoundé", codePostal: "BP 000", pays: "Cameroun" },
-  statut: (["ACTIF","ACTIF","ACTIF","INACTIF","ACTIF","ACTIF","SUSPENDU","ACTIF","ACTIF","ACTIF","ACTIF","ACTIF"] as StatutEmploye[])[i],
-  dateEmbauche: `202${Math.floor(i / 4)}-${String((i % 12) + 1).padStart(2, "0")}-15`,
-  posteId: "p1",
-  poste: { id: "p1", intitule: ["Développeur","RH","Comptable","Commercial","Logisticien","Directeur","Designer","Analyste","Chef de projet","Ingénieur","Juriste","Assistant"][i], code: "P001", departementId: "d1", niveauHierarchique: 2 },
-  departementId: "d1",
-  departement: { id: "d1", nom: ["Informatique","Ressources Humaines","Finance","Commercial","Logistique","Direction","Marketing","Production"][i % 8], code: "D001", responsableId: "e1", nombreEmployes: 12 + i, createdAt: "" },
-  typeContrat: (["CDI","CDD","CDI","STAGE","CDI","CDI","CDI","CDD","CDI","CDI","APPRENTISSAGE","CDI"] as TypeContrat[])[i],
-  salaireBase: 200000 + i * 50000,
-  rib: `FR76${String(1000 + i).padStart(4, "0")}000000000000000${String(i + 1).padStart(2, "0")}`,
-  congesRestants: { annuels: 18 - i % 5, maladie: 5, exceptionnels: 2 },
-  createdAt: "2024-01-01",
-  updatedAt: "2024-06-01",
-}));
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function EmployesPage() {
@@ -62,40 +36,45 @@ export default function EmployesPage() {
   const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => { setEmployes(MOCK_EMPLOYES); setLoading(false); }, 600);
-    return () => clearTimeout(t);
+    const loadEmployes = async () => {
+      try {
+        const response = await employeService.getAll();
+        setEmployes(response.data?.data || []);
+      } catch (error) {
+        console.error("Erreur chargement employés :", error);
+        setEmployes([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadEmployes();
   }, []);
 
   const handleAddEmployee = async (data: Partial<Employe>) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const newEmployee: Employe = {
-        ...data,
-        id: `e${employes.length + 1}`,
-        matricule: `EMP${String(employes.length + 1).padStart(3, "0")}`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      } as Employe;
-      setEmployes(prev => [...prev, newEmployee]);
-      addToast({ type: "success", message: "Employé ajouté avec succès" });
+      const response = await employeService.create(data);
+      if (response.success && response.data) {
+        setEmployes(prev => [...prev, response.data!]);
+        addToast({ type: "success", message: "Employé ajouté avec succès" });
+      }
     } catch (error) {
       console.error("Erreur lors de la création:", error);
       addToast({ type: "error", message: "Erreur lors de la création de l'employé" });
     }
   };
 
-  // ── Handler de modification manquant ───────────────────────────────────
+  // ── Handler de modification ────────────────────────────────────────────
   const handleEditEmployee = async (data: Partial<Employe>) => {
     if (!editingEmployee) return;
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setEmployes(prev =>
-        prev.map(emp =>
-          emp.id === editingEmployee.id
-            ? { ...emp, ...data, updatedAt: new Date().toISOString() }
-            : emp
-        )
-      );
+      const response = await employeService.update(editingEmployee.id, data);
+      if (response.success && response.data) {
+        setEmployes(prev =>
+          prev.map(emp =>
+            emp.id === editingEmployee.id ? response.data! : emp
+          )
+        );
+      }
       setShowEditModal(false);
       setEditingEmployee(null);
       addToast({ type: "success", message: "Employé modifié avec succès" });

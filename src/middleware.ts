@@ -22,9 +22,8 @@ export function middleware(request: NextRequest) {
   const isPublicRoute = PUBLIC_ROUTES.some((r) => pathname.startsWith(r));
   const isAuthRoute   = AUTH_ROUTES.some((r) => pathname.startsWith(r));
 
-  // 🚀 Mode démo : si pas de backend, on accepte un token factice
-  const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
-  const isAuthenticated = Boolean(token) || isDemoMode;
+  // Authentification réelle - token requis
+  const isAuthenticated = Boolean(token);
 
   // Si pas authentifié et route protégée → redirection login
   if (!isAuthenticated && !isPublicRoute) {
@@ -56,20 +55,11 @@ export function middleware(request: NextRequest) {
 }
 
 /**
- * Récupère le rôle de l'utilisateur depuis le token ou cookie
- * En mode démo, utilise le cookie demo_role
+ * Récupère le rôle de l'utilisateur depuis le cookie
+ * Le backend Laravel définit ce cookie lors du login
  */
 function getUserRoleFromToken(request: NextRequest): string {
-  const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
-  
-  if (isDemoMode) {
-    // En mode démo, le rôle peut être stocké dans un cookie
-    return request.cookies.get("demo_role")?.value || "EMPLOYE";
-  }
-  
-  // TODO: En production, décoder le JWT pour obtenir le rôle
-  // Pour l'instant, on récupère depuis le localStorage via un cookie miroir
-  return request.cookies.get("rh_user_role")?.value || "EMPLOYE";
+  return request.cookies.get("rh_user_role")?.value || "employe";
 }
 
 /**

@@ -83,10 +83,10 @@ export default function DirecteurRapportsPage() {
         const fmt = (d: string) => d;
 
         if (activeReport === 'conges') {
-          const res = await rapportService.getRapportConges(startDate, endDate);
+          const res = await rapportService.getRapportConges({ periode_debut: startDate, periode_fin: endDate });
           if (res && res.success) setReportData(res.data);
         } else if (activeReport === 'effectifs') {
-          const res = await rapportService.getRapportEffectifs(startDate, endDate);
+          const res = await rapportService.getRapportEffectifs({ periode_debut: startDate, periode_fin: endDate });
           if (res && res.success) setReportData(res.data);
         } else {
           setReportData(null);
@@ -106,7 +106,20 @@ export default function DirecteurRapportsPage() {
   const handleExport = async (format: 'csv' | 'xlsx' | 'pdf') => {
     try {
       const type = activeReport === 'conges' ? 'leaves' : activeReport === 'effectifs' ? 'employees' : 'leaves';
-      const blob = await rapportService.exporterRapport(type, format, { debut: startDate, fin: endDate });
+      const response = await rapportService.exporterRapport({ 
+        type, 
+        format, 
+        periode_debut: startDate, 
+        periode_fin: endDate 
+      });
+      
+      if (!response.success || !response.data?.url) {
+        toast.error('Échec de la génération du fichier');
+        return;
+      }
+      
+      // Télécharger depuis l'URL
+      const blob = await fetch(response.data.url).then(r => r.blob());
 
       // download blob
       const url = window.URL.createObjectURL(blob as unknown as Blob);

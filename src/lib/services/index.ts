@@ -3,6 +3,7 @@ import { employeService } from "./employe.service";
 import { employeeService } from "./employee.service";
 import { contractService } from "./contract.service";
 import { leaveService } from "./leave.service";
+import { managerService } from "./manager.service";
 import { rhCongeService } from "./rh-conge.service";
 import { authService } from "./auth.service";
 import type {
@@ -92,14 +93,25 @@ export const rapportService = {
       leaves?: { name: string; demandes: number; approuves: number }[];
     }>>("/reports/charts", { type }),
 
-  getRapportConges: (debut: string, fin: string) =>
-    apiGet<ApiResponse<RapportConge>>("/reports/leaves", { debut, fin }),
+  getRapportConges: (params?: { periode_debut?: string; periode_fin?: string; departement?: string; page?: number; per_page?: number }) =>
+    apiGet<ApiResponse<any>>("/reports/leaves", params),
 
-  getRapportEffectifs: (debut: string, fin: string) =>
-    apiGet<ApiResponse<unknown>>("/reports/employees", { debut, fin }),
+  getRapportEffectifs: (params?: { periode_debut?: string; periode_fin?: string; departement?: string; page?: number; per_page?: number }) =>
+    apiGet<ApiResponse<any>>("/reports/employees", params),
 
-  exporterRapport: (type: string, format: "csv" | "xlsx" | "pdf", params?: object) =>
-    apiGet<Blob>(`/reports/${type}/export`, { format, ...params }),
+  getRapportAbsenteisme: (params?: { periode_debut?: string; periode_fin?: string; departement?: string; page?: number; per_page?: number }) =>
+    apiGet<ApiResponse<any>>("/reports/absenteeism", params),
+
+  getRapportMasseSalariale: (params?: { periode_debut?: string; periode_fin?: string; departement?: string; page?: number; per_page?: number }) =>
+    apiGet<ApiResponse<any>>("/reports/payroll", params),
+
+  exporterRapport: (params: { type: string; format: "csv" | "xlsx" | "pdf"; periode_debut?: string; periode_fin?: string; departement?: string }) =>
+    apiGet<ApiResponse<{ url: string }>>(`/reports/${params.type}/export`, { 
+      format: params.format, 
+      periode_debut: params.periode_debut,
+      periode_fin: params.periode_fin,
+      departement: params.departement 
+    }),
 };
 
 // ── RBAC (Rôles et Permissions) ──────────────────────────────────────────────
@@ -141,4 +153,4 @@ export const auditService = {
     apiGet<ApiResponse<any>>("/audit/stats"),
 };
 
-export { employeService, employeeService, contractService, leaveService, rhCongeService, authService };
+export { employeService, employeeService, contractService, leaveService, managerService, rhCongeService, authService };
