@@ -60,7 +60,7 @@ export default function RHCongesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/api/v1/conges/${id}`);
+      await api.delete(`/conges/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conges-rh'] });

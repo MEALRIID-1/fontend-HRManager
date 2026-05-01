@@ -46,7 +46,7 @@ export default function SuperValidationModal({ isOpen, onClose, conge }: SuperVa
 
   const superValidateMutation = useMutation({
     mutationFn: async (data: SuperValidationFormData) => {
-      const response = await api.post(`/api/v1/conges/${conge.id}/super-validation`, {
+      const response = await api.post(`/conges/${conge.id}/super-validation`, {
         commentaire: data.motif,
       });
       return response.data;

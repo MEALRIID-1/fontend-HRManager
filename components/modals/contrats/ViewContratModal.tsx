@@ -34,7 +34,7 @@ export default function ViewContratModal({ isOpen, onClose, contrat, isAdmin = t
   const handleDownload = async () => {
     // Appel API pour télécharger le PDF
     try {
-      const response = await fetch(`/api/v1/contrats/${contrat.id}/telecharger`);
+      const response = await fetch(`/api/contrats/${contrat.id}/telecharger`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');

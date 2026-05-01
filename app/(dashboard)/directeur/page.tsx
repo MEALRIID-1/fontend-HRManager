@@ -256,7 +256,7 @@ export default function DirecteurDashboardPage() {
                 <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={{ stroke: '#E5E7EB' }} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  formatter={(value: number) => [`${value} congés`, 'Nombre']}
+                  formatter={(value: any) => [`${value} congés`, 'Nombre']}
                 />
                 <Bar dataKey="nombre" fill="#2563EB" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -289,7 +289,7 @@ export default function DirecteurDashboardPage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  formatter={(value: number, name: string) => [`${value} employés`, name]}
+                  formatter={(value: any, name: any) => [`${value} employés`, name]}
                 />
                 <Legend verticalAlign="bottom" height={36} iconType="circle" />
               </PieChart>

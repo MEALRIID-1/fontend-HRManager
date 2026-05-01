@@ -44,10 +44,10 @@ export default function AddContratModal({ isOpen, onClose }: AddContratModalProp
         <div>
           <label className="block text-sm font-medium text-gray-700">Type de contrat</label>
           <select {...register('type')} className="mt-1 block w-full rounded border p-2">
-            <option value="CDI">CDI</option>
-            <option value="CDD">CDD</option>
-            <option value="Stage">Stage</option>
-            <option value="Alternance">Alternance</option>
+            <option value="cdi">CDI</option>
+            <option value="cdd">CDD</option>
+            <option value="stage">Stage</option>
+            <option value="alternance">Alternance</option>
           </select>
         </div>
 
@@ -56,7 +56,7 @@ export default function AddContratModal({ isOpen, onClose }: AddContratModalProp
           <input type="date" {...register('date_debut')} className="mt-1 block w-full rounded border p-2" />
         </div>
 
-        {type !== 'CDI' && (
+        {type !== 'cdi' && (
           <div>
             <label className="block text-sm font-medium text-gray-700">Date de fin *</label>
             <input type="date" {...register('date_fin')} className="mt-1 block w-full rounded border p-2" />

@@ -153,7 +153,7 @@ export default function ViewCongeModal({ isOpen, onClose, conge }: ViewCongeModa
                           <span className="font-medium">Commentaire:</span> {validation.commentaire || '-'}
                         </p>
                         <p className="text-xs text-gray-400 mt-2">
-                          {new Date(validation.date_validation).toLocaleString('fr-FR')}
+                          {new Date(validation.created_at || '').toLocaleString('fr-FR')}
                         </p>
                       </>
                     ) : (

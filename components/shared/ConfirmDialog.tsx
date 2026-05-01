@@ -10,7 +10,7 @@ export interface ConfirmDialogProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
-  type?: 'danger' | 'warning' | 'info';
+  type?: 'danger' | 'warning' | 'info' | 'success';
   isLoading?: boolean;
 }
 
@@ -42,6 +42,11 @@ export default function ConfirmDialog({
       icon: <CheckCircle className="text-blue-600" size={48} />,
       button: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
       border: 'border-blue-200',
+    },
+    success: {
+      icon: <CheckCircle className="text-emerald-600" size={48} />,
+      button: 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500',
+      border: 'border-emerald-200',
     },
   };
 

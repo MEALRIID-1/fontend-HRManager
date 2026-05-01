@@ -53,7 +53,7 @@ export default function DirecteurEmployesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/api/v1/employes/${id}`);
+      await api.delete(`/employes/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employes'] });
@@ -82,17 +82,6 @@ export default function DirecteurEmployesPage() {
     }
   };
 
-  const handleDelete = (employe: User) => {
-    setSelectedEmploye(employe);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (selectedEmploye) {
-      deleteMutation.mutate(selectedEmploye.id);
-    }
-  };
-
   const getStatutBadge = (statut: string) => {
     switch (statut) {
       case 'actif':
@@ -106,23 +95,10 @@ export default function DirecteurEmployesPage() {
     }
   };
 
-  const getRoleBadge = (role: string) => {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">Admin</span>;
-      case 'rh':
-        return <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">RH</span>;
-      case 'manager':
-        return <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">Manager</span>;
-      case 'employe':
-        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">Employé</span>;
-      default:
-        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">{role}</span>;
-    }
-  };
+  const getRoleBadge = (role?: string | null) => {
+    const normalizedRole = (role || '').toLowerCase();
 
-  const getRoleBadge = (role: string) => {
-    switch (role.toLowerCase()) {
+    switch (normalizedRole) {
       case 'admin':
         return <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">Admin</span>;
       case 'rh':
@@ -131,6 +107,8 @@ export default function DirecteurEmployesPage() {
         return <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">Manager</span>;
       case 'employe':
         return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">Employé</span>;
+      case '':
+        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">-</span>;
       default:
         return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">{role}</span>;
     }
@@ -159,96 +137,15 @@ export default function DirecteurEmployesPage() {
     {
       key: 'departement',
       header: 'Département',
-      render: (employe: User) => <span className="text-gray-600">{employe.departement?.nom || '-'}</span>,
+      render: (employe: User) => <span className="text-gray-600">{employe.departement || '-'}</span>,
     },
     {
       key: 'roles',
       header: 'Rôle',
       render: (employe: User) => (
         <div className="flex gap-1">
-          {employe.roles?.map((role) => (
-            <span key={role.id}>{getRoleBadge(role.slug)}</span>
-          ))}
-        </div>
-      ),
-    },
-    {
-      key: 'date_embauche',
-      header: 'Date embauche',
-      render: (employe: User) => (
-        <span className="text-gray-600">
-          {employe.date_embauche ? new Date(employe.date_embauche).toLocaleDateString('fr-FR') : '-'}
-        </span>
-      ),
-    },
-    {
-      key: 'statut',
-      header: 'Statut',
-      render: (employe: User) => getStatutBadge(employe.statut || 'actif'),
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      render: (employe: User) => (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleView(employe)}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            title="Voir"
-          >
-            <Eye size={18} />
-          </button>
-          <button
-            onClick={() => handleEdit(employe)}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            title="Modifier"
-          >
-            <Pencil size={18} />
-          </button>
-          <button
-            onClick={() => handleDelete(employe)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            title="Supprimer"
-          >
-            <Trash2 size={18} />
-          </button>
-        </div>
-      ),
-    },
-  ];
-
-  const columns = [
-    {
-      key: 'nom',
-      header: 'Employé',
-      render: (employe: User) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold">
-            {employe.prenom?.[0]}{employe.nom?.[0]}
-          </div>
-          <div>
-            <p className="font-medium text-gray-900">{employe.prenom} {employe.nom}</p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'email',
-      header: 'Email',
-      render: (employe: User) => <span className="text-gray-600">{employe.email}</span>,
-    },
-    {
-      key: 'departement',
-      header: 'Département',
-      render: (employe: User) => <span className="text-gray-600">{employe.departement?.nom || '-'}</span>,
-    },
-    {
-      key: 'roles',
-      header: 'Rôle',
-      render: (employe: User) => (
-        <div className="flex gap-1">
-          {employe.roles?.map((role) => (
-            <span key={role.id}>{getRoleBadge(role.slug)}</span>
+          {(employe.roles || []).map((role, index) => (
+            <span key={role?.id || `${employe.id}-${index}`}>{getRoleBadge(role?.slug)}</span>
           ))}
         </div>
       ),

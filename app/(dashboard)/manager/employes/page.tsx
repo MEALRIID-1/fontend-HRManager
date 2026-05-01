@@ -10,10 +10,10 @@ import PageHeader from '@/components/shared/PageHeader';
 import ViewEmployeManagerModal from '@/components/modals/employes/ViewEmployeManagerModal';
 import { Users, Eye, Search } from 'lucide-react';
 
-const fetchEmployesByDepartement = async (departementId: number, search?: string): Promise<User[]> => {
+const fetchEmployesByDepartement = async (departement: string, search?: string): Promise<User[]> => {
   const response = await api.get<{ data: User[] }>('/employes', { 
     params: { 
-      departement_id: departementId,
+      departement,
       search 
     } 
   });
@@ -27,9 +27,9 @@ export default function ManagerEmployesPage() {
   const [selectedEmploye, setSelectedEmploye] = useState<User | null>(null);
 
   const { data: employes, isLoading } = useQuery({
-    queryKey: ['employes-manager', user?.departement?.id, searchQuery],
-    queryFn: () => fetchEmployesByDepartement(user?.departement?.id || 0, searchQuery),
-    enabled: !!user?.departement?.id,
+    queryKey: ['employes-manager', user?.departement, searchQuery],
+    queryFn: () => fetchEmployesByDepartement(user?.departement || '', searchQuery),
+    enabled: !!user?.departement,
   });
 
   const handleView = (employe: User) => {
@@ -76,9 +76,9 @@ export default function ManagerEmployesPage() {
       render: (employe: User) => <span className="text-gray-600">{employe.email}</span>,
     },
     {
-      key: 'statut_conge',
-      header: 'Statut congé',
-      render: (employe: User) => getStatutCongeBadge(employe.statut_conge || 'present'),
+      key: 'statut',
+      header: 'Statut',
+      render: (employe: User) => getStatutCongeBadge(employe.statut || 'present'),
     },
     {
       key: 'actions',
@@ -98,7 +98,7 @@ export default function ManagerEmployesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Mon Équipe - ${user?.departement?.nom || 'Département'}`}
+        title={`Mon Équipe - ${user?.departement || 'Département'}`}
         subtitle={`${employes?.length || 0} employé(s) dans votre département`}
         icon={<Users size={28} />}
       />

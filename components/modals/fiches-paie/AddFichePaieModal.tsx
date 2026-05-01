@@ -26,7 +26,7 @@ const fetchEmployes = async () => {
 };
 
 const fetchContrat = async (employeId: number) => {
-  const response = await api.get<{ data: any }>(`/api/v1/contrats`, {
+  const response = await api.get<{ data: any }>(`/contrats`, {
     params: { employe_id: employeId, statut: 'actif', per_page: 1 },
   });
   return response.data.data?.[0];

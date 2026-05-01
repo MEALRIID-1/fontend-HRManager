@@ -70,14 +70,14 @@ export type CongeFormData = z.infer<typeof congeSchema>;
 // Contrat validation
 export const contratSchema = z.object({
   employe_id: z.number().min(1, 'Employé requis'),
-  type: z.enum(['CDI', 'CDD', 'Stage', 'Alternance']),
+  type: z.enum(['cdi', 'cdd', 'stage', 'alternance', 'freelance']),
   date_debut: z.string().min(1, 'Date de début requise'),
   date_fin: z.string().optional(),
   salaire_base: z.number().min(0).optional(),
   poste: z.string().optional(),
   departement: z.string().optional(),
 }).refine((data) => {
-  if (data.type !== 'CDI' && !data.date_fin) {
+  if (data.type !== 'cdi' && !data.date_fin) {
     return false;
   }
   return true;

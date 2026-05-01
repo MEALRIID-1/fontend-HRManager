@@ -73,7 +73,7 @@ export default function MonProfilTab() {
     defaultValues: {
       nom: user?.nom || '',
       prenom: user?.prenom || '',
-      departement: user?.departement && typeof user.departement === 'object' ? String(user.departement.id) : String(user?.departement || ''),
+      departement: String(user?.departement || ''),
       iban: '',
     },
   });

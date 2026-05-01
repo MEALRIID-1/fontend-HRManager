@@ -14,6 +14,8 @@ export interface User {
   adresse?: string;
   iban?: string;
   is_active: boolean;
+  statut?: string;
+  deleted_at?: string | null;
   roles: Role[];
   permissions?: string[];
   created_at?: string;

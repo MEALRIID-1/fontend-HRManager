@@ -85,7 +85,7 @@ export default function ViewEmployeManagerModal({ isOpen, onClose, employe }: Vi
                 <Building2 className="text-gray-500" size={20} />
                 <div>
                   <p className="text-sm text-gray-500">Département</p>
-                  <p className="font-medium text-gray-900">{employe.departement?.nom || '-'}</p>
+                  <p className="font-medium text-gray-900">{employe.departement || '-'}</p>
                 </div>
               </div>
 

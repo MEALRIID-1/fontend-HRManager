@@ -13,17 +13,17 @@ const fetchRoles = async () => {
 };
 
 const fetchPermissions = async (roleId: number) => {
-  const response = await api.get<{ data: any[] }>(`/api/v1/parametres/roles/${roleId}/permissions`);
+  const response = await api.get<{ data: any[] }>(`/parametres/roles/${roleId}/permissions`);
   return response.data.data;
 };
 
 const savePermissions = async (roleId: number, permissions: number[]) => {
-  const response = await api.put(`/api/v1/parametres/roles/${roleId}/permissions`, { permissions });
+  const response = await api.put(`/parametres/roles/${roleId}/permissions`, { permissions });
   return response.data;
 };
 
 const deleteRole = async (roleId: number) => {
-  const response = await api.delete(`/api/v1/parametres/roles/${roleId}`);
+  const response = await api.delete(`/parametres/roles/${roleId}`);
   return response.data;
 };
 

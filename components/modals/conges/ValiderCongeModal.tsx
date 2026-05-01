@@ -45,7 +45,7 @@ export default function ValiderCongeModal({ isOpen, onClose, conge }: ValiderCon
 
   const validateMutation = useMutation({
     mutationFn: async (data: ValidationFormData) => {
-      const response = await api.post(`/api/v1/conges/${conge.id}/valider`, {
+      const response = await api.post(`/conges/${conge.id}/valider`, {
         decision: data.decision,
         commentaire: data.motif,
       });

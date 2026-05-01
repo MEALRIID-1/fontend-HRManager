@@ -16,12 +16,12 @@ const fetchDeletedFichesPaie = async () => {
 };
 
 const restoreFichePaie = async (id: number) => {
-  const response = await api.put(`/api/v1/fiches-paie/${id}/restore`);
+  const response = await api.put(`/fiches-paie/${id}/restore`);
   return response.data;
 };
 
 const permanentlyDeleteFichePaie = async (id: number) => {
-  const response = await api.delete(`/api/v1/fiches-paie/${id}/force`);
+  const response = await api.delete(`/fiches-paie/${id}/force`);
   return response.data;
 };
 

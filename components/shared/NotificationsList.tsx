@@ -87,7 +87,7 @@ export default function NotificationsList() {
     },
   });
 
-  const notifications = notificationsData?.data ?? [];
+  const notifications = notificationsData ?? [];
   const meta = (notificationsData as any)?.meta;
   const unreadCount = notifications.filter((n) => !n.is_read && !n.lu && n.statut !== 'lu').length;
 

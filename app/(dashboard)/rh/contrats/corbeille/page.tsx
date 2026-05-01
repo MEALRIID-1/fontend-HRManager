@@ -16,12 +16,12 @@ const fetchDeletedContrats = async () => {
 };
 
 const restoreContrat = async (id: number) => {
-  const response = await api.post(`/api/v1/contrats/${id}/restore`);
+  const response = await api.post(`/contrats/${id}/restore`);
   return response.data;
 };
 
 const forceDeleteContrat = async (id: number) => {
-  const response = await api.delete(`/api/v1/contrats/${id}/force`);
+  const response = await api.delete(`/contrats/${id}/force`);
   return response.data;
 };
 

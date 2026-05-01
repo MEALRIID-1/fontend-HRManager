@@ -12,7 +12,7 @@ const fetchUsers = async () => {
 };
 
 const fetchUserPermissions = async (userId: number) => {
-  const response = await api.get<{ data: any }>(`/api/v1/parametres/users/${userId}/permissions`);
+  const response = await api.get<{ data: any }>(`/parametres/users/${userId}/permissions`);
   return response.data;
 };
 
@@ -22,7 +22,7 @@ const fetchRoles = async () => {
 };
 
 const changeUserRole = async (userId: number, roleId: number) => {
-  const response = await api.put(`/api/v1/parametres/users/${userId}/role`, { role_id: roleId });
+  const response = await api.put(`/parametres/users/${userId}/role`, { role_id: roleId });
   return response.data;
 };
 

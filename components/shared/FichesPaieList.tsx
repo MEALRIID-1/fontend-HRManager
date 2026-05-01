@@ -22,7 +22,7 @@ const fetchEmployes = async () => {
 };
 
 const deleteFichePaie = async (id: number) => {
-  const response = await api.delete(`/api/v1/fiches-paie/${id}`);
+  const response = await api.delete(`/fiches-paie/${id}`);
   return response.data;
 };
 

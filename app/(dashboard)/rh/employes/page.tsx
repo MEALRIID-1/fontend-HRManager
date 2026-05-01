@@ -52,7 +52,7 @@ export default function RHEmployesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/api/v1/employes/${id}`);
+      await api.delete(`/employes/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employes'] });
@@ -132,7 +132,7 @@ export default function RHEmployesPage() {
     {
       key: 'departement',
       header: 'Département',
-      render: (employe: User) => <span className="text-gray-600">{employe.departement?.nom || '-'}</span>,
+      render: (employe: User) => <span className="text-gray-600">{employe.departement || '-'}</span>,
     },
     {
       key: 'roles',

@@ -51,7 +51,7 @@ export default function ProfilPage() {
       prenom: profile?.prenom || '',
       email: profile?.email || '',
       telephone: profile?.telephone || '',
-      departement: (profile?.departement && typeof profile.departement === 'object') ? profile.departement.nom : profile?.departement || '',
+      departement: profile?.departement || '',
       poste: profile?.poste || '',
       adresse: profile?.adresse || '',
     },

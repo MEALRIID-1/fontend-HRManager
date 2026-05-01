@@ -29,7 +29,7 @@ export default function CorbeilleCongesPage() {
 
   const restoreMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.post(`/api/v1/conges/${id}/restore`);
+      await api.post(`/conges/${id}/restore`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conges-trashed-rh'] });
@@ -40,7 +40,7 @@ export default function CorbeilleCongesPage() {
 
   const forceDeleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/api/v1/conges/${id}/force`);
+      await api.delete(`/conges/${id}/force`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conges-trashed-rh'] });

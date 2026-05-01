@@ -29,7 +29,7 @@ export default function ContratLetter({ contrat, mode = 'view', onClose }: Contr
   const handleDownloadPDF = async () => {
     setIsDownloading(true);
     try {
-      const response = await api.get(`/api/v1/contrats/${contrat.id}/pdf`, {
+      const response = await api.get(`/contrats/${contrat.id}/pdf`, {
         responseType: 'blob',
       });
       

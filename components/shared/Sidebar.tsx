@@ -95,6 +95,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   // Get primary role
   const primaryRole = useAuthStore.getState().getPrimaryRoleSlug?.() || '';
   const userRole = primaryRole.toLowerCase();
+  const routeRole = userRole === 'admin' || userRole === 'directeur' ? 'directeur' : userRole;
   
   // Filter nav items by role and get correct href based on user's role
   const filteredNavItems = navItems.filter(item => {
@@ -151,12 +152,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               // Get the correct href based on user's role
               let href = item.href;
               
-              // For role-specific paths, replace the role part with user's primary role
+              // For role-specific paths, replace the role part with the real route segment.
               if (userRole && (item.href.includes('/notifications') || item.href.includes('/rapports') || item.href.includes('/employes') || item.href.includes('/conges') || item.href.includes('/contrats'))) {
-                // Replace role prefix with user's actual role
                 const roleMatch = /\/(admin|directeur|rh|manager|employe)\//.exec(item.href);
                 if (roleMatch) {
-                  href = item.href.replace(roleMatch[0], `/${userRole}/`);
+                  href = item.href.replace(roleMatch[0], `/${routeRole}/`);
                 }
               }
               

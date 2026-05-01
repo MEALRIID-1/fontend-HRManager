@@ -70,9 +70,7 @@ export default function ViewFichePaieModal({ isOpen, onClose, fiche }: ViewFiche
                 </h3>
                 <p className="text-sm text-gray-500">{fiche.employe?.email || ''}</p>
                 <p className="text-sm text-gray-500">
-                  {fiche.employe?.departement && typeof fiche.employe.departement === 'object'
-                    ? fiche.employe.departement.nom
-                    : (fiche.employe?.departement as string) || ''}
+                  {(fiche.employe?.departement as string) || ''}
                 </p>
               </div>
             </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { User } from '@/types';
@@ -28,7 +29,7 @@ export default function CorbeilleEmployesPage() {
 
   const restoreMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await api.post<{ data: User }>(`/api/v1/employes/${id}/restore`);
+      const response = await api.post<{ data: User }>(`/employes/${id}/restore`);
       return response.data.data;
     },
     onSuccess: () => {
@@ -40,7 +41,7 @@ export default function CorbeilleEmployesPage() {
 
   const permanentDeleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/api/v1/employes/${id}/force`);
+      await api.delete(`/employes/${id}/force`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employes-trash'] });
@@ -93,7 +94,7 @@ export default function CorbeilleEmployesPage() {
     {
       key: 'departement',
       header: 'Département',
-      render: (employe: User) => <span className="text-gray-600">{employe.departement?.nom || '-'}</span>,
+      render: (employe: User) => <span className="text-gray-600">{employe.departement || '-'}</span>,
     },
     {
       key: 'deleted_at',

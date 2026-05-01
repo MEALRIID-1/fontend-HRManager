@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { User } from '@/types';
 import Modal from '@/components/shared/Modal';
 import { Pencil, Upload, Check } from 'lucide-react';
+import { Role } from '@/types';
 
 const employeSchema = z.object({
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
@@ -17,7 +19,7 @@ const employeSchema = z.object({
   departement: z.string().min(1, 'Le département est requis'),
   date_embauche: z.string().min(1, 'La date d\'embauche est requise'),
   iban: z.string().optional(),
-  role: z.enum(['rh', 'manager', 'employe']),
+  role_slug: z.enum(['rh', 'manager', 'employe', 'admin']),
 });
 
 type EmployeFormData = z.infer<typeof employeSchema>;
@@ -31,6 +33,7 @@ interface EditEmployeModalProps {
 export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmployeModalProps) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const {
     register,
@@ -40,7 +43,23 @@ export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmplo
     formState: { errors },
   } = useForm<EmployeFormData>({
     resolver: zodResolver(employeSchema),
+    defaultValues: {
+      role_slug: 'employe',
+    },
   });
+
+  const { data: roles = [] } = useQuery({
+    queryKey: ['roles'],
+    queryFn: async () => {
+      const response = await api.get<{ data: Role[] }>('/parametres/roles');
+      return response.data.data;
+    },
+    enabled: isOpen,
+  });
+
+  const roleOptions = useMemo(() => {
+    return roles.filter((role) => ['admin', 'rh', 'manager', 'employe'].includes(role.slug));
+  }, [roles]);
 
   // Pré-remplir le formulaire avec les données de l'employé
   useEffect(() => {
@@ -48,20 +67,40 @@ export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmplo
       setValue('nom', employe.nom);
       setValue('prenom', employe.prenom);
       setValue('email', employe.email);
-      setValue('departement', employe.departement?.nom || '');
+      setValue('departement', employe.departement || '');
       setValue('date_embauche', employe.date_embauche || '');
-      setValue('role', (employe.roles?.[0]?.slug as 'rh' | 'manager' | 'employe') || 'employe');
+      setValue('role_slug', (employe.roles?.[0]?.slug as 'rh' | 'manager' | 'employe' | 'admin') || 'employe');
     }
   }, [employe, setValue]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setErrorMessage(null);
+      setSuccessMessage(null);
+      setPhotoPreview(null);
+    }
+  }, [isOpen]);
 
   const queryClient = useQueryClient();
 
   const updateEmploye = useMutation({
     mutationFn: async (data: EmployeFormData) => {
-      const response = await api.put(`/api/v1/employes/${employe.id}`, data);
+      const selectedRole = roles.find((role) => role.slug === data.role_slug);
+      const payload = {
+        nom: data.nom,
+        prenom: data.prenom,
+        email: data.email,
+        departement: data.departement,
+        date_embauche: data.date_embauche,
+        iban: data.iban || null,
+        role_ids: selectedRole ? [selectedRole.id] : [],
+      };
+
+      const response = await api.put(`/employes/${employe.id}`, payload);
       return response.data;
     },
     onSuccess: () => {
+      setErrorMessage(null);
       queryClient.invalidateQueries({ queryKey: ['employes'] });
       setSuccessMessage('Employé modifié avec succès.');
       setTimeout(() => {
@@ -71,9 +110,14 @@ export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmplo
         onClose();
       }, 2000);
     },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || error?.response?.data?.errors?.role_ids?.[0] || error?.response?.data?.errors?.email?.[0] || 'Impossible de modifier l\'employé';
+      setErrorMessage(message);
+    },
   });
 
   const onSubmit = (data: EmployeFormData) => {
+    setErrorMessage(null);
     updateEmploye.mutate(data);
   };
 
@@ -101,6 +145,12 @@ export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmplo
         </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {errorMessage && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {errorMessage}
+            </div>
+          )}
+
           {/* Photo upload */}
           <div className="flex items-center gap-4 mb-6">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
@@ -197,14 +247,16 @@ export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmplo
                 Rôle <span className="text-red-500">*</span>
               </label>
               <select
-                {...register('role')}
+                {...register('role_slug')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="employe">Employé</option>
-                <option value="manager">Manager</option>
-                <option value="rh">RH</option>
+                {roleOptions.map((role) => (
+                  <option key={role.id} value={role.slug}>
+                    {role.nom}
+                  </option>
+                ))}
               </select>
-              {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role.message}</p>}
+              {errors.role_slug && <p className="text-red-500 text-xs mt-1">{errors.role_slug.message}</p>}
             </div>
 
             <div>
