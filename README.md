@@ -1,8 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HRManager Frontend
 
-## Getting Started
+Frontend application for HRManager - A comprehensive HR management system built with Next.js 16, React 19, TypeScript, and Tailwind CSS.
 
-First, run the development server:
+## 🚀 Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **State Management**: Zustand
+- **Data Fetching**: React Query (@tanstack/react-query)
+- **HTTP Client**: Axios
+- **Form Validation**: React Hook Form + Zod
+- **Icons**: Lucide React
+- **Container**: Docker
+
+## 📋 Prerequisites
+
+- Node.js 20+
+- npm or yarn or pnpm
+- Docker (optional, for containerized deployment)
+
+## 🛠️ Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd frontend-hrmanager
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+
+3. Create environment file:
+```bash
+cp .env.local.example .env.local
+```
+
+4. Configure environment variables in `.env.local`:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:80/api/v1
+NEXT_PUBLIC_APP_NAME=HRManager
+```
+
+## 🏃 Development
+
+### Local Development
+
+Run the development server:
 
 ```bash
 npm run dev
@@ -10,27 +60,181 @@ npm run dev
 yarn dev
 # or
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Docker Development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Build and run with Docker Compose:
 
-## Learn More
+```bash
+# From the project root
+docker-compose --profile dev up frontend-dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+The development server will be available at [http://localhost:3001](http://localhost:3001).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🐳 Docker Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Production Build
 
-## Deploy on Vercel
+Build and run the production container:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# From the project root
+docker-compose up frontend
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The production app will be available at [http://localhost:3000](http://localhost:3000).
+
+### Docker Build Commands
+
+Build the production image:
+```bash
+docker build -t hrmanager-frontend .
+```
+
+Run the container:
+```bash
+docker run -p 3000:3000 \
+  -e NEXT_PUBLIC_API_URL=http://nginx/api/v1 \
+  hrmanager-frontend
+```
+
+## 📁 Project Structure
+
+```
+frontend-hrmanager/
+├── app/                    # Next.js App Router
+│   ├── (dashboard)/       # Dashboard routes
+│   │   ├── directeur/     # Admin dashboard
+│   │   ├── rh/           # HR dashboard
+│   │   ├── manager/      # Manager dashboard
+│   │   └── employe/      # Employee dashboard
+│   ├── login/            # Login page
+│   ├── layout.tsx        # Root layout
+│   └── page.tsx          # Home page
+├── components/           # React components
+│   ├── contrats/         # Contract components
+│   ├── modals/           # Modal components
+│   ├── shared/           # Shared components
+│   └── ui/               # UI components (shadcn/ui)
+├── hooks/                # Custom React hooks
+│   ├── useAuth.ts        # Authentication hook
+│   ├── useEmployes.ts    # Employees hooks
+│   ├── useConges.ts      # Leaves hooks
+│   ├── useContrats.ts    # Contracts hooks
+│   ├── useNotifications.ts # Notifications hooks
+│   └── useDashboard.ts   # Dashboard hooks
+├── lib/                  # Utility libraries
+│   ├── api.ts            # Axios instance
+│   ├── utils.ts          # Utility functions
+│   └── validations/      # Zod validation schemas
+├── stores/               # Zustand stores
+│   ├── authStore.ts      # Authentication store
+│   └── notificationStore.ts # Notification store
+├── types/                # TypeScript types
+│   └── index.ts          # All type definitions
+├── Dockerfile            # Production Dockerfile
+├── Dockerfile.dev        # Development Dockerfile
+├── next.config.js        # Next.js configuration
+├── tailwind.config.ts    # Tailwind CSS configuration
+└── package.json          # Dependencies
+```
+
+## 🔧 Configuration
+
+### Next.js Configuration
+
+The `next.config.js` file includes:
+- Image optimization settings
+- API rewrites for CORS handling
+- Environment variable exposure
+
+### Tailwind CSS Configuration
+
+Custom colors defined in `tailwind.config.ts`:
+- `primary`: #2563EB (blue)
+- `primary-dark`: #1D4ED8 (dark blue)
+- `success`: #059669 (green)
+- `warning`: #D97706 (amber)
+- `error`: #DC2626 (red)
+
+### Environment Variables
+
+- `NEXT_PUBLIC_API_URL`: Backend API URL
+- `NEXT_PUBLIC_APP_NAME`: Application name
+
+## 🔐 Authentication
+
+The application uses JWT-based authentication:
+- Token stored in localStorage and cookies
+- Automatic token refresh
+- Role-based access control (Admin, RH, Manager, Employee)
+
+## 📊 Features
+
+### Admin (Directeur)
+- Employee management
+- Contract management
+- Leave request management
+- Payslip management
+- Dashboard with statistics
+
+### HR
+- Employee management
+- Contract management
+- Leave request approval
+- Payslip generation
+- Dashboard with statistics
+
+### Manager
+- Team leave management
+- Leave request approval
+- Dashboard with team statistics
+
+### Employee
+- Personal profile
+- Leave request submission
+- Payslip viewing
+- Dashboard with personal statistics
+
+## 🧪 Testing
+
+```bash
+npm run lint
+```
+
+## 📦 Build for Production
+
+```bash
+npm run build
+npm start
+```
+
+## 🌐 Docker Compose
+
+The project includes a complete Docker Compose setup at the root level with:
+- Backend service (Laravel)
+- Frontend service (Next.js)
+- Nginx reverse proxy
+- MySQL database
+
+Start all services:
+```bash
+docker-compose up
+```
+
+Start only development services:
+```bash
+docker-compose --profile dev up
+```
+
+## 📝 License
+
+This project is proprietary software.
+
+## 🤝 Support
+
+For support, please contact the development team.
