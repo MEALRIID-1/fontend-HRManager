@@ -86,8 +86,8 @@ function MiniCalendar({ conges }: { conges: { date_debut: string; date_fin: stri
         </button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center text-sm">
-        {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map(day => (
-          <div key={day} className="p-2 text-gray-500 font-medium">{day}</div>
+        {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((day, index) => (
+          <div key={`${day}-${index}`} className="p-2 text-gray-500 font-medium">{day}</div>
         ))}
         {Array.from({ length: firstDay === 0 ? 6 : firstDay - 1 }).map((_, i) => (
           <div key={`empty-${i}`} className="p-2"></div>

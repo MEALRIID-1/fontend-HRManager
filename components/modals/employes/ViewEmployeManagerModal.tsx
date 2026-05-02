@@ -12,14 +12,20 @@ interface ViewEmployeManagerModalProps {
 
 export default function ViewEmployeManagerModal({ isOpen, onClose, employe }: ViewEmployeManagerModalProps) {
   const getRoleBadge = (role: string) => {
+    if (!role) {
+      return <span className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-700 rounded-full">-</span>;
+    }
     switch (role.toLowerCase()) {
       case 'admin':
+      case 'administrateur':
         return <span className="px-3 py-1 text-sm font-medium bg-purple-100 text-purple-700 rounded-full">Admin</span>;
       case 'rh':
+      case 'ressources humaines':
         return <span className="px-3 py-1 text-sm font-medium bg-blue-100 text-blue-700 rounded-full">RH</span>;
       case 'manager':
         return <span className="px-3 py-1 text-sm font-medium bg-amber-100 text-amber-700 rounded-full">Manager</span>;
       case 'employe':
+      case 'employé':
         return <span className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-700 rounded-full">Employé</span>;
       default:
         return <span className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-700 rounded-full">{role}</span>;
