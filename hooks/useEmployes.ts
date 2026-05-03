@@ -61,6 +61,7 @@ export const useCreateEmploye = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employes'] });
+      queryClient.invalidateQueries({ queryKey: ['employes-manager'] });
       toast.success('Employé créé avec succès');
     },
     onError: (error: any) => {
@@ -79,6 +80,7 @@ export const useUpdateEmploye = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['employes'] });
+      queryClient.invalidateQueries({ queryKey: ['employes-manager'] });
       queryClient.invalidateQueries({ queryKey: ['employe', variables.id] });
       toast.success('Employé mis à jour avec succès');
     },
@@ -97,6 +99,7 @@ export const useDeleteEmploye = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employes'] });
+      queryClient.invalidateQueries({ queryKey: ['employes-manager'] });
       toast.success('Employé supprimé avec succès');
     },
     onError: (error: any) => {
@@ -115,6 +118,7 @@ export const useRestoreEmploye = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employes'] });
+      queryClient.invalidateQueries({ queryKey: ['employes-manager'] });
       queryClient.invalidateQueries({ queryKey: ['employes', 'trashed'] });
       toast.success('Employé restauré avec succès');
     },

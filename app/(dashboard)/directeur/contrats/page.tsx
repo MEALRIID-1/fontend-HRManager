@@ -39,6 +39,30 @@ export default function DirecteurContratsPage() {
     queryFn: fetchEmployes,
   });
 
+  const handleDownloadContrat = async (contrat: Contrat) => {
+    try {
+      const response = await api.get(`/contrats/${contrat.id}/telecharger`, {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], {
+        type: response.headers?.['content-type'] || 'application/pdf',
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `contrat-${contrat.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erreur téléchargement contrat:', error);
+      alert('Erreur lors du téléchargement du contrat');
+    }
+  };
+
   const filteredContrats = useMemo(() => {
     return contrats.filter((contrat) => {
       const status = contrat.statut ?? contrat.etat ?? 'actif';
@@ -143,6 +167,7 @@ export default function DirecteurContratsPage() {
           </button>
           <button
             type="button"
+            onClick={() => handleDownloadContrat(contrat)}
             className="rounded-lg p-2 text-blue-600 hover:bg-blue-50 transition-colors"
             title="Télécharger PDF"
           >

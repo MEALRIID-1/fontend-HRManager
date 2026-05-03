@@ -119,14 +119,18 @@ export default function AddEmployeModal({ isOpen, onClose }: AddEmployeModalProp
     onSuccess: () => {
       setErrorMessage(null);
       queryClient.invalidateQueries({ queryKey: ['employes'] });
+      queryClient.invalidateQueries({ queryKey: ['employes-manager'] });
       setSuccessMessage('Employé créé avec succès.');
-      setTimeout(() => {
-        setSuccessMessage(null);
-        reset();
-        setPhotoPreview(null);
-        setGeneratedPassword(null);
-        onClose();
-      }, 2000);
+      reset({
+        nom: '',
+        prenom: '',
+        email: '',
+        departement: '',
+        date_embauche: '',
+        iban: '',
+        role_slug: 'employe',
+        mot_de_passe: '',
+      });
     },
     onError: (error: any) => {
       const message = error?.response?.data?.message || 
@@ -170,16 +174,70 @@ export default function AddEmployeModal({ isOpen, onClose }: AddEmployeModalProp
     }
   };
 
+  const handleClose = () => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setPhotoPreview(null);
+    setGeneratedPassword(null);
+    reset({
+      nom: '',
+      prenom: '',
+      email: '',
+      departement: '',
+      date_embauche: '',
+      iban: '',
+      role_slug: 'employe',
+      mot_de_passe: '',
+    });
+    onClose();
+  };
+
   const departements = ['IT', 'RH', 'Ventes', 'Marketing', 'Finance', 'Opérations'];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Nouvel Employé" size="lg">
       {successMessage ? (
-        <div className="flex flex-col items-center justify-center py-8">
-          <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
-            <Check className="w-8 h-8 text-emerald-600" />
+        <div className="flex flex-col gap-5 py-2">
+          <div className="flex flex-col items-center justify-center py-4">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+              <Check className="w-8 h-8 text-emerald-600" />
+            </div>
+            <p className="text-lg font-semibold text-gray-900 text-center">{successMessage}</p>
+            <p className="mt-2 text-sm text-gray-500 text-center max-w-md">
+              Le mot de passe temporaire ci-dessous est enregistré dans la base de données et peut être utilisé pour la première connexion.
+            </p>
           </div>
-          <p className="text-lg font-semibold text-gray-900 text-center">{successMessage}</p>
+
+          {generatedPassword && (
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Mot de passe temporaire</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={generatedPassword}
+                  readOnly
+                  className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900"
+                />
+                <button
+                  type="button"
+                  onClick={copyPassword}
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Copier
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="rounded-lg bg-blue-600 px-4 py-2.5 text-white hover:bg-blue-700 transition-colors"
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -349,7 +407,7 @@ export default function AddEmployeModal({ isOpen, onClose }: AddEmployeModalProp
           <div className="flex gap-3 justify-end pt-4">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
               Annuler
