@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { User } from '@/types';
 import Modal from '@/components/shared/Modal';
-import { Pencil, Upload, Check } from 'lucide-react';
+import { Upload, Check } from 'lucide-react';
 import { Role } from '@/types';
 
 const employeSchema = z.object({
@@ -19,7 +19,7 @@ const employeSchema = z.object({
   departement: z.string().min(1, 'Le département est requis'),
   date_embauche: z.string().min(1, 'La date d\'embauche est requise'),
   iban: z.string().optional(),
-  role_slug: z.enum(['rh', 'manager', 'employe', 'admin']),
+  role_id: z.string().min(1, 'Le rôle est requis'),
 });
 
 type EmployeFormData = z.infer<typeof employeSchema>;
@@ -27,7 +27,7 @@ type EmployeFormData = z.infer<typeof employeSchema>;
 interface EditEmployeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  employe: User;
+  employe: User | null;
 }
 
 export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmployeModalProps) {
@@ -44,34 +44,44 @@ export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmplo
   } = useForm<EmployeFormData>({
     resolver: zodResolver(employeSchema),
     defaultValues: {
-      role_slug: 'employe',
+      role_id: '',
     },
   });
 
-  const { data: roles = [] } = useQuery({
+  // ✅ URL corrigée : /roles
+  const { data: roles = [], isLoading: rolesLoading } = useQuery({
     queryKey: ['roles'],
     queryFn: async () => {
-      const response = await api.get<{ data: Role[] }>('/parametres/roles');
-      return response.data.data;
+      try {
+        const response = await api.get<{ data: Role[] }>('/roles');
+        return response.data.data || [];
+      } catch (error) {
+        console.error('Erreur chargement rôles:', error);
+        return [
+          { id: 1, nom: 'Admin', slug: 'admin' },
+          { id: 2, nom: 'RH', slug: 'rh' },
+          { id: 3, nom: 'Manager', slug: 'manager' },
+          { id: 4, nom: 'Employé', slug: 'employe' },
+        ];
+      }
     },
     enabled: isOpen,
   });
 
-  const roleOptions = useMemo(() => {
-    return roles.filter((role) => ['admin', 'rh', 'manager', 'employe'].includes(role.slug));
-  }, [roles]);
-
   // Pré-remplir le formulaire avec les données de l'employé
   useEffect(() => {
-    if (employe) {
-      setValue('nom', employe.nom);
-      setValue('prenom', employe.prenom);
-      setValue('email', employe.email);
+    if (employe && isOpen) {
+      setValue('nom', employe.nom || '');
+      setValue('prenom', employe.prenom || '');
+      setValue('email', employe.email || '');
       setValue('departement', employe.departement || '');
       setValue('date_embauche', employe.date_embauche || '');
-      setValue('role_slug', (employe.roles?.[0]?.slug as 'rh' | 'manager' | 'employe' | 'admin') || 'employe');
+      setValue('iban', employe.iban || '');
+      // ✅ Utilise role_id au lieu de role_slug
+      const roleId = employe.roles?.[0]?.id ? String(employe.roles[0].id) : '';
+      setValue('role_id', roleId);
     }
-  }, [employe, setValue]);
+  }, [employe, isOpen, setValue]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -85,7 +95,6 @@ export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmplo
 
   const updateEmploye = useMutation({
     mutationFn: async (data: EmployeFormData) => {
-      const selectedRole = roles.find((role) => role.slug === data.role_slug);
       const payload = {
         nom: data.nom,
         prenom: data.prenom,
@@ -93,10 +102,10 @@ export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmplo
         departement: data.departement,
         date_embauche: data.date_embauche,
         iban: data.iban || null,
-        role_ids: selectedRole ? [selectedRole.id] : [],
+        role_ids: data.role_id ? [parseInt(data.role_id)] : [],
       };
 
-      const response = await api.put(`/employes/${employe.id}`, payload);
+      const response = await api.put(`/employes/${employe?.id}`, payload);
       return response.data;
     },
     onSuccess: () => {
@@ -111,7 +120,10 @@ export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmplo
       }, 2000);
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || error?.response?.data?.errors?.role_ids?.[0] || error?.response?.data?.errors?.email?.[0] || 'Impossible de modifier l\'employé';
+      const message = error?.response?.data?.message || 
+                     error?.response?.data?.errors?.role_ids?.[0] || 
+                     error?.response?.data?.errors?.email?.[0] || 
+                     'Impossible de modifier l\'employé';
       setErrorMessage(message);
     },
   });
@@ -133,6 +145,8 @@ export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmplo
   };
 
   const departements = ['IT', 'RH', 'Ventes', 'Marketing', 'Finance', 'Opérations'];
+
+  if (!employe) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Modifier l'Employé" size="lg">
@@ -247,16 +261,18 @@ export default function EditEmployeModal({ isOpen, onClose, employe }: EditEmplo
                 Rôle <span className="text-red-500">*</span>
               </label>
               <select
-                {...register('role_slug')}
+                {...register('role_id')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={rolesLoading}
               >
-                {roleOptions.map((role) => (
-                  <option key={role.id} value={role.slug}>
+                <option value="">Sélectionner un rôle</option>
+                {!rolesLoading && roles.map((role) => (
+                  <option key={role.id} value={role.id}>
                     {role.nom}
                   </option>
                 ))}
               </select>
-              {errors.role_slug && <p className="text-red-500 text-xs mt-1">{errors.role_slug.message}</p>}
+              {errors.role_id && <p className="text-red-500 text-xs mt-1">{errors.role_id.message}</p>}
             </div>
 
             <div>

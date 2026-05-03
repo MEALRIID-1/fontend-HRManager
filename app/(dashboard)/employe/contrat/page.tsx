@@ -123,7 +123,7 @@ export default function EmployeContratPage() {
                       <div>
                         <p className="text-sm text-gray-500">Salaire brut mensuel</p>
                         <p className="font-semibold text-gray-900">
-                          {activeContract.salaire_brut ? `${activeContract.salaire_brut.toLocaleString()} €` : '-'}
+                          {activeContract.salaire_brut ? `${activeContract.salaire_brut.toLocaleString()} XAF` : '-'}
                         </p>
                       </div>
                     </div>

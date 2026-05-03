@@ -89,7 +89,7 @@ export default function ViewContratModal({ isOpen, onClose, contrat }: ViewContr
               <p className="text-sm text-gray-500">Salaire de base</p>
             </div>
             <p className="font-semibold text-gray-900">
-              {contrat.salaire_base ? `${contrat.salaire_base.toLocaleString()} €` : '-'}
+              {contrat.salaire_base ? `${contrat.salaire_base.toLocaleString()} XAF` : '-'}
             </p>
           </div>
         </div>

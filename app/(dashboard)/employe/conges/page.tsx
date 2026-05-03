@@ -9,6 +9,7 @@ import { Calendar, Plus, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide
 
 export default function EmployeCongesPage() {
   const [showModal, setShowModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { data: mesConges, isLoading } = useMesConges();
   const createConge = useCreateConge();
 
@@ -17,9 +18,22 @@ export default function EmployeCongesPage() {
   });
 
   const onSubmit = async (data: CongeFormData) => {
-    await createConge.mutateAsync(data);
-    setShowModal(false);
-    reset();
+    try {
+      await createConge.mutateAsync(data);
+      setShowModal(false);
+      reset();
+    } catch (err: any) {
+      const apiErrors = err?.response?.data?.errors;
+      const apiMessage = err?.response?.data?.message;
+      if (apiErrors) {
+        const firstError = Object.values(apiErrors).flat()[0] as string;
+        setErrorMessage(firstError);
+      } else if (apiMessage) {
+        setErrorMessage(apiMessage);
+      } else {
+        setErrorMessage('Une erreur est survenue.');
+      }
+    }
   };
 
   const getStatusIcon = (etat: string) => {
@@ -109,9 +123,9 @@ export default function EmployeCongesPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                      {getStatusIcon(conge.etat)}
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(conge.etat)}`}>
-                        {getStatusLabel(conge.etat)}
+                      {getStatusIcon(conge.statut)}
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(conge.statut)}`}>
+                        {getStatusLabel(conge.statut)}
                       </span>
                     </div>
                   </td>
@@ -159,6 +173,27 @@ export default function EmployeCongesPage() {
                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">Demander</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-80 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertCircle className="text-red-500 flex-shrink-0" size={24} />
+              <h3 className="text-base font-semibold text-gray-900">Erreur</h3>
+            </div>
+            <p className="text-sm text-gray-700 mb-5">{errorMessage}</p>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setErrorMessage(null)}
+                className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}

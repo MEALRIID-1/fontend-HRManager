@@ -9,13 +9,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
+// Schéma avec les bons noms de champs
 const schema = z.object({
-  employe_id: z.number().min(1, 'L\'employé est requis'),
-  mois: z.number().min(1).max(12),
-  annee: z.number().min(2020).max(2100),
-  salaire_base: z.number().min(0),
+  employe_id: z.number().min(1, "L'employé est obligatoire"),
+  mois: z.number().min(1, 'Le mois est obligatoire').max(12),
+  annee: z.number().min(2020, 'Année invalide').max(2100),
+  salaire_base: z.number().min(0, 'Le salaire de base est obligatoire'),
   heures_sup: z.number().min(0),
   absences: z.number().min(0),
+  statut: z.string(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -25,14 +27,23 @@ const fetchEmployes = async () => {
   return response.data.data;
 };
 
+// ✅ CORRECTION 1 : Gérer le cas où aucun contrat n'est trouvé
 const fetchContrat = async (employeId: number) => {
-  const response = await api.get<{ data: any }>(`/contrats`, {
-    params: { employe_id: employeId, statut: 'actif', per_page: 1 },
-  });
-  return response.data.data?.[0];
+  if (!employeId) return null;
+  
+  try {
+    const response = await api.get<{ data: any[] }>(`/contrats`, {
+      params: { employe_id: employeId, statut: 'actif', per_page: 1 },
+    });
+    return response.data.data?.[0] || null;
+  } catch (error) {
+    console.error('Erreur lors de la récupération du contrat:', error);
+    return null;
+  }
 };
 
 const createFichePaie = async (data: FormData) => {
+  console.log('Envoi des données:', data);
   const response = await api.post('/fiches-paie', data);
   return response.data;
 };
@@ -45,8 +56,17 @@ interface AddFichePaieModalProps {
 export default function AddFichePaieModal({ isOpen, onClose }: AddFichePaieModalProps) {
   const queryClient = useQueryClient();
   const [calculatedNet, setCalculatedNet] = useState<number>(0);
+  const [isSalaryLoaded, setIsSalaryLoaded] = useState<boolean>(false);
 
-  const { register, handleSubmit, watch, setValue, reset } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    getValues,
+    formState: { errors },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       employe_id: 0,
@@ -55,6 +75,7 @@ export default function AddFichePaieModal({ isOpen, onClose }: AddFichePaieModal
       salaire_base: 0,
       heures_sup: 0,
       absences: 0,
+      statut: 'brouillon',
     },
   });
 
@@ -69,24 +90,31 @@ export default function AddFichePaieModal({ isOpen, onClose }: AddFichePaieModal
   const heuresSup = watch('heures_sup');
   const absences = watch('absences');
 
-  const { data: contrat } = useQuery({
+  // ✅ CORRECTION 2 : Ne pas exécuter la requête si employeId est 0 ou undefined
+  const { data: contrat, isLoading: isLoadingContrat } = useQuery({
     queryKey: ['contrat-actif', employeId],
     queryFn: () => fetchContrat(employeId),
-    enabled: !!employeId && isOpen,
+    enabled: !!employeId && employeId !== 0 && isOpen, // Correction ici
   });
 
   useEffect(() => {
-    if (contrat?.salaire_base && salaireBase === 0) {
-      setValue('salaire_base', contrat.salaire_base);
-    }
-  }, [contrat, salaireBase, setValue]);
+    setIsSalaryLoaded(false);
+  }, [employeId]);
 
   useEffect(() => {
-    // Calcul simplifié du net à payer
-    const tauxHoraireSup = salaireBase / 151.67 * 1.25;
-    const deductionAbsences = (salaireBase / 21.67) * absences;
-    const brut = salaireBase + (heuresSup * tauxHoraireSup) - deductionAbsences;
-    const cotisations = brut * 0.23; // ~23% de cotisations
+    // ✅ CORRECTION 3 : Vérifier que contrat existe et a salaire_brut
+    if (contrat?.salaire_brut && !isSalaryLoaded && getValues('salaire_base') === 0) {
+      setValue('salaire_base', contrat.salaire_brut);
+      setIsSalaryLoaded(true);
+    }
+  }, [contrat, setValue, isSalaryLoaded, getValues]);
+
+  useEffect(() => {
+    const tauxHoraire = (salaireBase || 0) / 151.67;
+    const montantHeuresSup = (heuresSup || 0) * tauxHoraire * 1.25;
+    const deductionAbsences = ((salaireBase || 0) / 22) * (absences || 0);
+    const brut = (salaireBase || 0) + montantHeuresSup - deductionAbsences;
+    const cotisations = brut * 0.23;
     const net = brut - cotisations;
     setCalculatedNet(Math.max(0, net));
   }, [salaireBase, heuresSup, absences]);
@@ -97,42 +125,53 @@ export default function AddFichePaieModal({ isOpen, onClose }: AddFichePaieModal
       queryClient.invalidateQueries({ queryKey: ['fiches-paie'] });
       reset();
       setCalculatedNet(0);
+      setIsSalaryLoaded(false);
       onClose();
+    },
+    onError: (error: any) => {
+      console.error('Erreur détaillée:', error.response?.data || error);
     },
   });
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
+    console.log('Soumission du formulaire:', data);
     mutation.mutate(data);
   };
 
   const months = [
     'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
   ];
+
+  const years = Array.from({ length: 11 }, (_, i) => 2020 + i);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Générer une fiche de paie" size="lg">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Employé */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Employé</label>
             <select
               {...register('employe_id', { valueAsNumber: true })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+              className={`w-full rounded-lg border ${errors.employe_id ? 'border-red-500' : 'border-gray-300'} px-3 py-2.5 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20`}
             >
-              <option value="">Sélectionner un employé</option>
+              <option value={0}>Sélectionner un employé</option>
               {employes.map((emp: any) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.prenom} {emp.nom}
                 </option>
               ))}
             </select>
+            {errors.employe_id && <p className="text-red-500 text-xs mt-1">{errors.employe_id.message}</p>}
           </div>
+
+          {/* Mois */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Mois</label>
             <select
               {...register('mois', { valueAsNumber: true })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+              className={`w-full rounded-lg border ${errors.mois ? 'border-red-500' : 'border-gray-300'} px-3 py-2.5 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20`}
             >
               {months.map((m, i) => (
                 <option key={i + 1} value={i + 1}>
@@ -140,37 +179,55 @@ export default function AddFichePaieModal({ isOpen, onClose }: AddFichePaieModal
                 </option>
               ))}
             </select>
+            {errors.mois && <p className="text-red-500 text-xs mt-1">{errors.mois.message}</p>}
           </div>
+
+          {/* Année */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Année</label>
             <select
               {...register('annee', { valueAsNumber: true })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+              className={`w-full rounded-lg border ${errors.annee ? 'border-red-500' : 'border-gray-300'} px-3 py-2.5 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20`}
             >
-              {[2024, 2025, 2026, 2027].map((year) => (
+              {years.map((year) => (
                 <option key={year} value={year}>
                   {year}
                 </option>
               ))}
             </select>
+            {errors.annee && <p className="text-red-500 text-xs mt-1">{errors.annee.message}</p>}
           </div>
+
+          {/* Salaire de base */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Salaire base (€)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Salaire base (XAF)
+              {isLoadingContrat && employeId && employeId !== 0 && <span className="ml-2 text-xs text-gray-500">Chargement...</span>}
+              {contrat && !isLoadingContrat && <span className="ml-2 text-xs text-green-600">✓ Auto-chargé</span>}
+            </label>
             <input
               type="number"
               step="0.01"
-              {...register('salaire_base', { valueAsNumber: true })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+              value={salaireBase || ''}
+              onChange={(e) => setValue('salaire_base', parseFloat(e.target.value) || 0)}
+              className={`w-full rounded-lg border ${errors.salaire_base ? 'border-red-500' : 'border-gray-300'} px-3 py-2.5 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20`}
+              placeholder="0"
             />
+            {errors.salaire_base && <p className="text-red-500 text-xs mt-1">{errors.salaire_base.message}</p>}
           </div>
+
+          {/* Heures supplémentaires */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Heures supplémentaires</label>
             <input
               type="number"
+              step="0.01"
               {...register('heures_sup', { valueAsNumber: true })}
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
             />
           </div>
+
+          {/* Absences */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Absences (jours)</label>
             <input
@@ -188,10 +245,12 @@ export default function AddFichePaieModal({ isOpen, onClose }: AddFichePaieModal
             <span className="font-medium text-purple-900">Calcul automatique</span>
           </div>
           <div className="text-2xl font-bold text-purple-600">
-            Net à payer estimé: {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(calculatedNet)}
+            Net à payer estimé:{' '}
+            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XAF' }).format(calculatedNet)}
           </div>
         </div>
 
+        {/* Actions */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
           <button
             type="button"

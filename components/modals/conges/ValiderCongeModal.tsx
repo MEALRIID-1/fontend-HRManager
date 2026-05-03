@@ -10,9 +10,19 @@ import { Conge } from '@/types';
 import Modal from '@/components/shared/Modal';
 import { CheckCircle, XCircle, Calendar, User, AlertCircle } from 'lucide-react';
 
+// ✅ Correction : validation plus simple
 const validationSchema = z.object({
   decision: z.enum(['approuve', 'refuse']),
-  motif: z.string().min(10, 'Le motif doit contenir au moins 10 caractères'),
+  motif: z.string().optional(),
+}).refine((data) => {
+  // Si la décision est 'refuse', le motif est requis et doit avoir au moins 10 caractères
+  if (data.decision === 'refuse') {
+    return data.motif && data.motif.length >= 10;
+  }
+  return true;
+}, {
+  message: 'Le motif de refus doit contenir au moins 10 caractères',
+  path: ['motif'],
 });
 
 type ValidationFormData = z.infer<typeof validationSchema>;
@@ -47,7 +57,7 @@ export default function ValiderCongeModal({ isOpen, onClose, conge }: ValiderCon
     mutationFn: async (data: ValidationFormData) => {
       const response = await api.post(`/conges/${conge.id}/valider`, {
         decision: data.decision,
-        commentaire: data.motif,
+        motif: data.motif || (data.decision === 'approuve' ? 'Approuvé par le responsable' : ''),
       });
       return response.data;
     },
@@ -59,6 +69,12 @@ export default function ValiderCongeModal({ isOpen, onClose, conge }: ValiderCon
         reset();
         onClose();
       }, 2000);
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.errors?.motif?.[0] || 
+                     error?.response?.data?.message || 
+                     'Erreur lors de la validation';
+      alert(message);
     },
   });
 
@@ -146,17 +162,19 @@ export default function ValiderCongeModal({ isOpen, onClose, conge }: ValiderCon
               </div>
             </div>
 
-            {/* Motif obligatoire */}
+            {/* Motif - requis seulement pour refus */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Motif / Commentaire <span className="text-red-500">*</span>
-                <span className="text-xs text-gray-500 font-normal ml-2">(min. 10 caractères)</span>
+                {decision === 'refuse' ? 'Motif de refus' : 'Commentaire (optionnel)'}
+                {decision === 'refuse' && <span className="text-red-500 ml-1">*</span>}
               </label>
               <textarea
                 {...register('motif')}
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={`Veuillez justifier votre décision de ${decision === 'approuve' ? 'validation' : 'refus'}...`}
+                placeholder={decision === 'refuse' 
+                  ? "Veuillez expliquer le motif du refus (minimum 10 caractères)..." 
+                  : "Commentaire optionnel pour accompagner l'approbation..."}
               />
               {errors.motif && (
                 <div className="flex items-center gap-1 mt-1 text-red-500 text-sm">

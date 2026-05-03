@@ -18,7 +18,7 @@ const generateCongesReport = async (filters: any) => {
 };
 
 const exportPDF = async (filters: any) => {
-  const response = await api.get('/rapports/export-pdf', {
+  const response = await api.get('/rapports/conges/export-pdf', {
     params: { type: 'conges', ...filters },
     responseType: 'blob',
   });
@@ -26,7 +26,7 @@ const exportPDF = async (filters: any) => {
 };
 
 const exportExcel = async (filters: any) => {
-  const response = await api.get('/rapports/export-excel', {
+  const response = await api.get('/rapports/conges/export-excel', {
     params: { type: 'conges', ...filters },
     responseType: 'blob',
   });
@@ -82,7 +82,7 @@ export default function ReportCongesTab() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'rapport_conges.xlsx';
+    a.download = 'rapport_conges.csv';
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -91,15 +91,17 @@ export default function ReportCongesTab() {
 
   const reportData = generateMutation.data;
   const isLoading = generateMutation.isPending;
+  const reportPayload = reportData?.data ?? null;
+  const conges = Array.isArray(reportPayload?.conges) ? reportPayload.conges : [];
 
-  const stats = reportData?.stats || {
+  const stats = reportPayload?.statistiques || {
     total: 0,
     approuvees: 0,
     refusees: 0,
     jours_totaux: 0,
   };
 
-  const topEmployees = reportData?.top_employees || [];
+  const topEmployees = Array.isArray(reportPayload?.top_employees) ? reportPayload.top_employees : [];
 
   return (
     <div className="space-y-6">
@@ -189,7 +191,7 @@ export default function ReportCongesTab() {
         </div>
       )}
 
-      {isGenerated && reportData && (
+      {isGenerated && reportPayload && (
         <>
           {/* Statistics Summary */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -310,7 +312,7 @@ export default function ReportCongesTab() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {reportData?.data?.map((item: any) => (
+                  {conges.map((item: any) => (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {item.employe?.prenom} {item.employe?.nom}

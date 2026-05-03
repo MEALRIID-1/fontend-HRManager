@@ -12,8 +12,15 @@ import AddFichePaieModal from '@/components/modals/fiches-paie/AddFichePaieModal
 import ViewFichePaieModal from '@/components/modals/fiches-paie/ViewFichePaieModal';
 
 const fetchFichesPaie = async (params?: any) => {
-  const response = await api.get<{ data: FichePaie[] }>('/fiches-paie', { params });
-  return response.data;
+  const response = await api.get<{ success: boolean; message: string; data: FichePaie[] }>('/fiches-paie', { params });
+  const payload = response.data.data as any;
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+  return [];
 };
 
 const fetchEmployes = async () => {
@@ -24,6 +31,26 @@ const fetchEmployes = async () => {
 const deleteFichePaie = async (id: number) => {
   const response = await api.delete(`/fiches-paie/${id}`);
   return response.data;
+};
+
+const downloadFichePaiePdf = async (id: number) => {
+  const response = await api.get(`/fiches-paie/${id}/telecharger`, {
+    responseType: 'blob',
+  });
+
+  const contentType = String(response.headers?.['content-type'] || 'application/pdf');
+  const blob = new Blob([response.data], {
+    type: contentType,
+  });
+
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `bulletin-paie-${id}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 };
 
 const months = [
@@ -39,7 +66,7 @@ export default function FichesPaieList({ isAdmin = false }: FichesPaieListProps)
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({
     mois: '',
-    annee: new Date().getFullYear().toString(),
+    annee: '',
     employe_id: '',
     statut: '',
   });
@@ -63,9 +90,15 @@ export default function FichesPaieList({ isAdmin = false }: FichesPaieListProps)
     },
   });
 
+  // CORRECTION ICI - Version sécurisée avec vérification
   const filteredFiches = useMemo(() => {
-    const fiches = fichesData?.data ?? [];
-    return fiches.sort((a, b) => {
+    // Vérification que fichesData existe et que c'est un tableau
+    if (!fichesData || !Array.isArray(fichesData)) {
+      return [];
+    }
+    
+    // Copie du tableau et tri
+    return [...fichesData].sort((a, b) => {
       if (b.annee !== a.annee) return b.annee - a.annee;
       return b.mois - a.mois;
     });
@@ -82,11 +115,11 @@ export default function FichesPaieList({ isAdmin = false }: FichesPaieListProps)
     if (fiche.employe?.prenom || fiche.employe?.nom) {
       return `${fiche.employe?.prenom ?? ''} ${fiche.employe?.nom ?? ''}`.trim();
     }
-    return fiche.employe?.name ?? 'Employé';
+    return 'Employé';
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XAF' }).format(amount);
   };
 
   const columns = [
@@ -156,6 +189,7 @@ export default function FichesPaieList({ isAdmin = false }: FichesPaieListProps)
           </button>
           <button
             type="button"
+            onClick={() => downloadFichePaiePdf(fiche.id)}
             className="rounded-lg p-2 text-emerald-600 hover:bg-emerald-50 transition-colors"
             title="Télécharger PDF"
           >

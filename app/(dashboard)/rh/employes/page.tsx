@@ -11,6 +11,7 @@ import AddEmployeModal from '@/components/modals/employes/AddEmployeModal';
 import EditEmployeModal from '@/components/modals/employes/EditEmployeModal';
 import ViewEmployeModal from '@/components/modals/employes/ViewEmployeModal';
 import { Users, Plus, Trash2, Eye, Pencil, Search, Filter } from 'lucide-react';
+import Link from 'next/link';
 
 const fetchEmployes = async (filters?: {
   search?: string;
@@ -197,13 +198,22 @@ export default function RHEmployesPage() {
         subtitle="Liste et gestion des employés de l'entreprise"
         icon={<Users size={28} />}
         actions={
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#2563EB] text-white rounded-lg hover:bg-[#1D4ED8] transition-colors"
-          >
-            <Plus size={20} />
-            Nouvel Employé
-          </button>
+          <div className="flex gap-3">
+            <Link
+              href="/rh/employes/corbeille"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <Trash2 size={20} />
+              Corbeille
+            </Link>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#2563EB] text-white rounded-lg hover:bg-[#1D4ED8] transition-colors"
+            >
+              <Plus size={20} />
+              Nouvel Employé
+            </button>
+          </div>
         }
       />
 

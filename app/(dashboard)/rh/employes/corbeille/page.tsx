@@ -7,7 +7,7 @@ import { User } from '@/types';
 import DataTable from '@/components/shared/DataTable';
 import PageHeader from '@/components/shared/PageHeader';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
-import { Trash2, RotateCcw, AlertTriangle, ArrowLeft, RefreshCw } from 'lucide-react';  // ✅ Ajouter RefreshCw
+import { Trash2, RotateCcw, AlertTriangle, ArrowLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
 const fetchDeletedEmployes = async (): Promise<User[]> => {
@@ -15,20 +15,18 @@ const fetchDeletedEmployes = async (): Promise<User[]> => {
   return response.data.data;
 };
 
-export default function CorbeilleEmployesPage() {
+export default function RHCorbeilleEmployesPage() {
   const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedEmploye, setSelectedEmploye] = useState<User | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);  // ✅ État pour le chargement du refresh
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { data: employes, isLoading, refetch } = useQuery({  // ✅ Ajouter refetch
+  const { data: employes, isLoading, refetch } = useQuery({
     queryKey: ['employes-trash'],
     queryFn: fetchDeletedEmployes,
   });
 
   const queryClient = useQueryClient();
 
-  // ✅ Fonction pour actualiser manuellement
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await refetch();
@@ -46,38 +44,6 @@ export default function CorbeilleEmployesPage() {
       setIsRestoreDialogOpen(false);
     },
   });
-
-  const permanentDeleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await api.delete(`/employes/${id}/force`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employes-trash'] });
-      setIsDeleteDialogOpen(false);
-    },
-  });
-
-  const handleRestore = (employe: User) => {
-    setSelectedEmploye(employe);
-    setIsRestoreDialogOpen(true);
-  };
-
-  const handlePermanentDelete = (employe: User) => {
-    setSelectedEmploye(employe);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmRestore = () => {
-    if (selectedEmploye) {
-      restoreMutation.mutate(selectedEmploye.id);
-    }
-  };
-
-  const confirmPermanentDelete = () => {
-    if (selectedEmploye) {
-      permanentDeleteMutation.mutate(selectedEmploye.id);
-    }
-  };
 
   const columns = [
     {
@@ -109,9 +75,7 @@ export default function CorbeilleEmployesPage() {
       header: 'Supprimé le',
       render: (employe: User) => (
         <span className="text-gray-600">
-          {employe.deleted_at 
-            ? new Date(employe.deleted_at).toLocaleDateString('fr-FR') 
-            : '-'}
+          {employe.deleted_at ? new Date(employe.deleted_at).toLocaleDateString('fr-FR') : '-'}
         </span>
       ),
     },
@@ -121,18 +85,14 @@ export default function CorbeilleEmployesPage() {
       render: (employe: User) => (
         <div className="flex items-center gap-2">
           <button
-            onClick={() => handleRestore(employe)}
+            onClick={() => {
+              setSelectedEmploye(employe);
+              setIsRestoreDialogOpen(true);
+            }}
             className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
             title="Restaurer"
           >
             <RotateCcw size={18} />
-          </button>
-          <button
-            onClick={() => handlePermanentDelete(employe)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            title="Supprimer définitivement"
-          >
-            <Trash2 size={18} />
           </button>
         </div>
       ),
@@ -143,22 +103,21 @@ export default function CorbeilleEmployesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Corbeille - Employés"
-        subtitle="Employés supprimés (Admin uniquement)"
+        subtitle="Employés supprimés"
         icon={<AlertTriangle size={28} className="text-amber-500" />}
         actions={
           <div className="flex gap-3">
-            {/* ✅ Bouton Actualiser */}
             <button
               onClick={handleRefresh}
               disabled={isRefreshing || isLoading}
               className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCw size={20} className={isRefreshing ? 'animate-spin' : ''} />
-              {/* {isRefreshing ? 'Actualisation...' : 'Actualiser'} */}
+              Actualiser
             </button>
-            
+
             <Link
-              href="/directeur/employes"
+              href="/rh/employes"
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
               <ArrowLeft size={20} />
@@ -172,10 +131,9 @@ export default function CorbeilleEmployesPage() {
         <div className="flex items-center gap-3">
           <AlertTriangle className="text-amber-600" size={24} />
           <div>
-            <p className="font-medium text-amber-900">Zone dangereuse - Admin uniquement</p>
+            <p className="font-medium text-amber-900">Zone de restauration</p>
             <p className="text-sm text-amber-700">
-              Les employés dans la corbeille peuvent être restaurés. 
-              La suppression définitive est irréversible.
+              Les employés supprimés peuvent être restaurés ici.
             </p>
           </div>
         </div>
@@ -192,23 +150,12 @@ export default function CorbeilleEmployesPage() {
       <ConfirmDialog
         isOpen={isRestoreDialogOpen}
         onClose={() => setIsRestoreDialogOpen(false)}
-        onConfirm={confirmRestore}
+        onConfirm={() => selectedEmploye && restoreMutation.mutate(selectedEmploye.id)}
         title="Restaurer l'employé"
         message={`Êtes-vous sûr de vouloir restaurer ${selectedEmploye?.prenom} ${selectedEmploye?.nom} ? L'employé sera de nouveau actif.`}
         confirmText="Restaurer"
         type="success"
         isLoading={restoreMutation.isPending}
-      />
-
-      <ConfirmDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-        onConfirm={confirmPermanentDelete}
-        title="Suppression définitive"
-        message={`ATTENTION : Cette action est irréversible. Êtes-vous sûr de vouloir supprimer définitivement ${selectedEmploye?.prenom} ${selectedEmploye?.nom} ?`}
-        confirmText="Supprimer définitivement"
-        type="danger"
-        isLoading={permanentDeleteMutation.isPending}
       />
     </div>
   );

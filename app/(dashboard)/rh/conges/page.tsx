@@ -174,7 +174,7 @@ export default function RHCongesPage() {
     {
       key: 'statut',
       header: 'Statut',
-      render: (conge: Conge) => getStatutBadge(conge.etat),
+      render: (conge: Conge) => getStatutBadge(conge.statut),
     },
     {
       key: 'validations',
@@ -193,7 +193,7 @@ export default function RHCongesPage() {
           >
             <Eye size={18} />
           </button>
-          {(conge.etat === 'en_attente' || conge.etat === 'partiellement_valide') && (
+          {(conge.statut === 'en_attente' || conge.statut === 'partiellement_valide') && (
             <button
               onClick={() => handleValider(conge)}
               className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"

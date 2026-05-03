@@ -26,7 +26,8 @@ interface AddContratModalProps {
   existingContrats: Contrat[];
 }
 
-const typeLabels: Record<string, string> = {
+// ✅ Mapping des types frontend (minuscules) vers backend (majuscules)
+const typeMapping: Record<string, string> = {
   cdi: 'CDI',
   cdd: 'CDD',
   stage: 'Stage',
@@ -75,7 +76,17 @@ export default function AddContratModal({ isOpen, onClose, existingContrats }: A
 
   const createMutation = useMutation({
     mutationFn: async (data: ContratFormData) => {
-      const response = await api.post('/contrats', data);
+      // ✅ Convertir le type en majuscules pour le backend
+      const payload = {
+        user_id: data.user_id,
+        type: typeMapping[data.type],  // 🔑 ICI : conversion cdi -> CDI
+        date_debut: data.date_debut,
+        date_fin: (data.type === 'cdi' || data.type === 'freelance') ? null : data.date_fin,
+        salaire_brut: data.salaire_brut,
+        statut: 'actif',
+      };
+      console.log('Payload envoyé:', payload);  // Pour déboguer
+      const response = await api.post('/contrats', payload);
       return response.data;
     },
     onSuccess: () => {
@@ -83,13 +94,14 @@ export default function AddContratModal({ isOpen, onClose, existingContrats }: A
       onClose();
     },
     onError: (err: any) => {
-      setError(err.response?.data?.message || 'Erreur lors de la création du contrat');
+      console.error('Erreur:', err.response?.data);
+      setError(err.response?.data?.message || err.response?.data?.errors?.type?.[0] || 'Erreur lors de la création du contrat');
     },
   });
 
   const checkActiveContract = (userId: number): boolean => {
     return existingContrats.some(
-      (c) => (c.user_id === userId || (c as any).employe_id === userId) && (c.statut === 'actif' || c.etat === 'actif')
+      (c) => (c.user_id === userId || (c as any).employe_id === userId) && (c.statut === 'actif')
     );
   };
 
@@ -98,11 +110,6 @@ export default function AddContratModal({ isOpen, onClose, existingContrats }: A
       setError('Cet employé a déjà un contrat actif. Veuillez le résilier ou terminer avant d\'en créer un nouveau.');
       return;
     }
-
-    if (type === 'cdi' || type === 'freelance') {
-      data.date_fin = undefined;
-    }
-
     createMutation.mutate(data);
   };
 
@@ -190,7 +197,7 @@ export default function AddContratModal({ isOpen, onClose, existingContrats }: A
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Salaire brut mensuel (€) <span className="text-red-500">*</span>
+              Salaire brut mensuel (XAF) <span className="text-red-500">*</span>
             </label>
             <input
               type="number"

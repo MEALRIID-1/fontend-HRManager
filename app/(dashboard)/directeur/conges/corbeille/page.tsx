@@ -7,9 +7,10 @@ import { Conge } from '@/types';
 import DataTable from '@/components/shared/DataTable';
 import PageHeader from '@/components/shared/PageHeader';
 import ViewCongeModal from '@/components/modals/conges/ViewCongeModal';
-import { Trash2, RotateCcw, AlertTriangle, Eye, ArrowLeft } from 'lucide-react';
+import { Trash2, RotateCcw, AlertTriangle, Eye, ArrowLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
+// ✅ CORRECTION : Enlever /v1/ car base URL l'a déjà
 const fetchDeletedConges = async (): Promise<Conge[]> => {
   const response = await api.get<{ data: Conge[] }>('/conges/trashed');
   return response.data.data;
@@ -19,13 +20,21 @@ export default function CorbeilleCongesPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedConge, setSelectedConge] = useState<Conge | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const queryClient = useQueryClient();
 
-  const { data: conges, isLoading } = useQuery({
+  const { data: conges, isLoading, refetch } = useQuery({
     queryKey: ['conges-trashed'],
     queryFn: fetchDeletedConges,
   });
+
+  // ✅ Fonction pour actualiser
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setIsRefreshing(false);
+  };
 
   const restoreMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -36,6 +45,10 @@ export default function CorbeilleCongesPage() {
       queryClient.invalidateQueries({ queryKey: ['conges'] });
       showSuccess('Demande restaurée avec succès !');
     },
+    onError: (error: any) => {
+      console.error('Erreur restauration:', error);
+      showSuccess('Erreur lors de la restauration');
+    },
   });
 
   const forceDeleteMutation = useMutation({
@@ -45,6 +58,10 @@ export default function CorbeilleCongesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conges-trashed'] });
       showSuccess('Demande supprimée définitivement.');
+    },
+    onError: (error: any) => {
+      console.error('Erreur suppression définitive:', error);
+      showSuccess('Erreur lors de la suppression');
     },
   });
 
@@ -77,8 +94,8 @@ export default function CorbeilleCongesPage() {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   };
 
-  const getStatutBadge = (etat: string) => {
-    switch (etat) {
+  const getStatutBadge = (statut: string) => {
+    switch (statut ) {
       case 'approuve':
         return <span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full">Approuvé</span>;
       case 'en_attente':
@@ -88,7 +105,7 @@ export default function CorbeilleCongesPage() {
       case 'refuse':
         return <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">Refusé</span>;
       default:
-        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">{etat}</span>;
+        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">{statut}</span>;
     }
   };
 
@@ -103,6 +120,9 @@ export default function CorbeilleCongesPage() {
           </div>
           <div>
             <p className="font-medium text-gray-900">{conge.employe?.prenom} {conge.employe?.nom}</p>
+            {conge.employe?.departement && (
+              <p className="text-xs text-gray-500">{conge.employe?.departement}</p>
+            )}
           </div>
         </div>
       ),
@@ -117,7 +137,11 @@ export default function CorbeilleCongesPage() {
       header: 'Période',
       render: (conge: Conge) => (
         <div>
-          <p className="text-gray-900">{conge.date_debut} au {conge.date_fin}</p>
+          <p className="text-gray-900">
+            {conge.date_debut ? new Date(conge.date_debut).toLocaleDateString('fr-FR') : '-'} 
+            {' au '} 
+            {conge.date_fin ? new Date(conge.date_fin).toLocaleDateString('fr-FR') : '-'}
+          </p>
           <p className="text-xs text-gray-500">{calculateDays(conge.date_debut, conge.date_fin)} jour(s)</p>
         </div>
       ),
@@ -125,7 +149,7 @@ export default function CorbeilleCongesPage() {
     {
       key: 'statut',
       header: 'Statut',
-      render: (conge: Conge) => getStatutBadge(conge.etat),
+      render: (conge: Conge) => getStatutBadge(conge.statut),
     },
     {
       key: 'actions',
@@ -164,7 +188,7 @@ export default function CorbeilleCongesPage() {
     <div className="space-y-6">
       {/* Toast notification */}
       {successMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-emerald-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in">
+        <div className="fixed top-4 right-4 z-50 bg-emerald-500 text-white px-4 py-3 rounded-lg shadow-lg">
           {successMessage}
         </div>
       )}
@@ -174,13 +198,24 @@ export default function CorbeilleCongesPage() {
         subtitle="Gestion des demandes de congés supprimées"
         icon={<Trash2 size={28} className="text-red-600" />}
         actions={
-          <Link
-            href="/directeur/conges"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            Retour aux congés
-          </Link>
+          <div className="flex gap-3">
+            {/* ✅ Bouton actualiser */}
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing || isLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={20} className={isRefreshing ? 'animate-spin' : ''} />
+              {/* {isRefreshing ? 'Actualisation...' : 'Actualiser'} */}
+            </button>
+            <Link
+              href="/directeur/conges"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <ArrowLeft size={20} />
+              Retour aux congés
+            </Link>
+          </div>
         }
       />
 
@@ -195,6 +230,20 @@ export default function CorbeilleCongesPage() {
           </p>
         </div>
       </div>
+
+      {/* ✅ Message si pas de données */}
+      {!isLoading && (!conges || conges.length === 0) && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+          <Trash2 size={48} className="mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500">Aucune demande de congé dans la corbeille</p>
+          <Link
+            href="/directeur/conges"
+            className="inline-block mt-4 text-blue-600 hover:text-blue-700"
+          >
+            Voir les demandes actives
+          </Link>
+        </div>
+      )}
 
       <DataTable
         columns={columns}

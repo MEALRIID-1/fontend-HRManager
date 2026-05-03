@@ -81,7 +81,7 @@ export default function EditContratModal({ isOpen, onClose, contrat }: EditContr
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Salaire de base (€)</label>
+          <label className="block text-sm font-medium text-gray-700">Salaire de base (XAF)</label>
           <input type="number" step="0.01" {...register('salaire_base', { valueAsNumber: true })} className="mt-1 block w-full rounded border p-2" />
         </div>
 

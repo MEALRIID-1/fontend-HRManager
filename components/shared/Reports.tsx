@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { TrendingUp } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import ReportCongesTab from './reports/ReportCongesTab';
 import ReportEmployesTab from './reports/ReportEmployesTab';
 import ReportActiviteTab from './reports/ReportActiviteTab';
@@ -51,9 +52,11 @@ export default function Reports({ isAdmin = false }: ReportsProps) {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'conges' && <ReportCongesTab />}
-      {activeTab === 'employes' && <ReportEmployesTab />}
-      {activeTab === 'activite' && isAdmin && <ReportActiviteTab />}
+      <ErrorBoundary>
+        {activeTab === 'conges' && <ReportCongesTab />}
+        {activeTab === 'employes' && <ReportEmployesTab />}
+        {activeTab === 'activite' && isAdmin && <ReportActiviteTab />}
+      </ErrorBoundary>
     </div>
   );
 }

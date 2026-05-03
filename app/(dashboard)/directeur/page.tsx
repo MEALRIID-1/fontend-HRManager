@@ -1,8 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { Users, FileText, Clock, CheckCircle, TrendingUp, TrendingDown, AlertTriangle, Briefcase } from 'lucide-react';
+import { Users, FileText, Clock, CheckCircle, TrendingUp, TrendingDown, AlertTriangle, Briefcase, X } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -17,7 +18,6 @@ import {
   Legend
 } from 'recharts';
 
-// Types pour le dashboard
 interface DashboardData {
   stats: {
     total_employes: number;
@@ -48,9 +48,8 @@ interface DashboardData {
   }[];
 }
 
-// Fonction pour formatter les dates relatives
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
+function formatRelativeTime(isoDate: string): string {
+  const date = new Date(isoDate);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -65,15 +64,63 @@ function formatRelativeTime(dateString: string): string {
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
-// Couleurs pour le graphique pie
+function useRelativeTime(isoDate: string): string {
+  const [label, setLabel] = useState(() => formatRelativeTime(isoDate));
+
+  useEffect(() => {
+    setLabel(formatRelativeTime(isoDate));
+    const interval = setInterval(() => {
+      setLabel(formatRelativeTime(isoDate));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [isoDate]);
+
+  return label;
+}
+
 const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 const fetchAdminDashboard = async (): Promise<DashboardData> => {
-  const response = await api.get<{ data: DashboardData }>('/dashboard/admin');
-  return response.data.data;
+  const response = await api.get('/dashboard/admin');
+  const raw = response.data.data;
+
+  return {
+    stats: {
+      total_employes: raw.statistiques?.total_employes ?? 0,
+      employes_variation: raw.statistiques?.employes_variation ?? 0,
+      contrats_actifs: raw.statistiques?.contrats_actifs ?? 0,
+      contrats_variation: raw.statistiques?.contrats_variation ?? 0,
+      conges_en_attente: raw.statistiques?.conges_en_attente ?? 0,
+      conges_attente_variation: raw.statistiques?.conges_attente_variation ?? 0,
+      conges_approuves_mois: raw.statistiques?.conges_approuves_mois ?? 0,
+      conges_approuves_variation: raw.statistiques?.conges_approuves_variation ?? 0,
+    },
+    conges_par_mois: raw.conges_par_mois?.map((item: any) => ({
+      mois: item.mois,
+      nombre: item.nombre,
+    })) ?? [],
+    repartition_departements: raw.repartition_departement?.map((d: any) => ({
+      nom: d.departement,
+      nombre: d.total,
+    })) ?? [],
+    contrats_expirants: raw.alertes?.contrats_expirant_details?.map((c: any) => ({
+      id: c.id,
+      employe_nom: c.employe_nom,
+      employe_prenom: c.employe_prenom,
+      date_fin: c.date_fin,
+      jours_restants: c.jours_restants,
+    })) ?? [],
+    activite_recente: raw.activite_recente?.map((a: any) => ({
+      id: a.id,
+      utilisateur_nom: a.user?.nom ?? 'Système',
+      utilisateur_prenom: a.user?.prenom ?? '',
+      action: a.action_label ?? a.action ?? '',
+      cible: a.entity_name ?? a.module_label ?? '',
+      date: a.timestamp ?? new Date().toISOString(),
+    })) ?? [],
+  };
 };
 
-// Composant Skeleton pour les stats cards
 function StatCardSkeleton() {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -89,7 +136,6 @@ function StatCardSkeleton() {
   );
 }
 
-// Composant Skeleton pour les graphiques
 function ChartSkeleton() {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -99,14 +145,66 @@ function ChartSkeleton() {
   );
 }
 
+function ActiviteItem({ activite }: { activite: DashboardData['activite_recente'][0] }) {
+  const tempsRelatif = useRelativeTime(activite.date);
+
+  return (
+    <div className="flex gap-4">
+      <div className="flex-shrink-0">
+        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
+          {activite.utilisateur_prenom[0]}{activite.utilisateur_nom[0]}
+        </div>
+      </div>
+      <div className="flex-1 pb-4 border-b border-gray-50 last:border-0 last:pb-0">
+        <p className="text-sm text-gray-900">
+          <span className="font-semibold">{activite.utilisateur_prenom} {activite.utilisateur_nom}</span>{' '}
+          <span className="text-gray-600">{activite.action}</span>{' '}
+          {activite.cible && <span className="font-medium">{activite.cible}</span>}
+        </p>
+        <p className="text-xs text-gray-500 mt-0.5">{tempsRelatif}</p>
+      </div>
+    </div>
+  );
+}
+
+function ActiviteModal({
+  activites,
+  onClose,
+}: {
+  activites: DashboardData['activite_recente'];
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900">Toute l'activité récente</h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X size={20} className="text-gray-500" />
+          </button>
+        </div>
+        <div className="overflow-y-auto p-6 space-y-4 flex-1">
+          {activites.map((activite) => (
+            <ActiviteItem key={activite.id} activite={activite} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DirecteurDashboardPage() {
+  const [showActiviteModal, setShowActiviteModal] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ['admin-dashboard'],
     queryFn: fetchAdminDashboard,
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    refetchInterval: 5 * 60 * 1000,
   });
 
-  // Données de démonstration si l'API n'est pas disponible
   const demoData: DashboardData = {
     stats: {
       total_employes: 42,
@@ -135,13 +233,10 @@ export default function DirecteurDashboardPage() {
     contrats_expirants: [
       { id: 1, employe_nom: 'Dupont', employe_prenom: 'Marie', date_fin: '2024-02-15', jours_restants: 5 },
       { id: 2, employe_nom: 'Martin', employe_prenom: 'Jean', date_fin: '2024-03-01', jours_restants: 18 },
-      { id: 3, employe_nom: 'Bernard', employe_prenom: 'Sophie', date_fin: '2024-03-10', jours_restants: 27 },
     ],
     activite_recente: [
       { id: 1, utilisateur_nom: 'Admin', utilisateur_prenom: 'System', action: 'a approuvé', cible: 'congé de Marie Dupont', date: new Date(Date.now() - 5 * 60000).toISOString() },
       { id: 2, utilisateur_nom: 'RH', utilisateur_prenom: 'Manager', action: 'a créé', cible: 'contrat pour Jean Martin', date: new Date(Date.now() - 15 * 60000).toISOString() },
-      { id: 3, utilisateur_nom: 'Admin', utilisateur_prenom: 'System', action: 'a modifié', cible: 'fiche de paie #1234', date: new Date(Date.now() - 45 * 60000).toISOString() },
-      { id: 4, utilisateur_nom: 'Manager', utilisateur_prenom: 'Team', action: 'a refusé', cible: 'congé de Paul Petit', date: new Date(Date.now() - 2 * 3600000).toISOString() },
     ],
   };
 
@@ -151,16 +246,12 @@ export default function DirecteurDashboardPage() {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Directeur</h1>
-        
-        {/* Stats Cards Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCardSkeleton />
           <StatCardSkeleton />
           <StatCardSkeleton />
           <StatCardSkeleton />
         </div>
-
-        {/* Charts Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ChartSkeleton />
           <ChartSkeleton />
@@ -206,6 +297,9 @@ export default function DirecteurDashboardPage() {
     },
   ];
 
+  const activiteVisible = dashboardData.activite_recente.slice(0, 5);
+  const aPlus = dashboardData.activite_recente.length > 5;
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Directeur</h1>
@@ -242,14 +336,13 @@ export default function DirecteurDashboardPage() {
 
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Graphique Barres - Congés par mois */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
             <TrendingUp size={20} className="text-blue-600" />
             Congés par mois
           </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ width: '100%', height: 256 }}>
+            <ResponsiveContainer width="100%" height={256}>
               <BarChart data={dashboardData.conges_par_mois}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="mois" tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={{ stroke: '#E5E7EB' }} />
@@ -264,14 +357,13 @@ export default function DirecteurDashboardPage() {
           </div>
         </div>
 
-        {/* Graphique Donut - Répartition par département */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
             <Briefcase size={20} className="text-purple-600" />
             Répartition par département
           </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ width: '100%', height: 256 }}>
+            <ResponsiveContainer width="100%" height={256}>
               <PieChart>
                 <Pie
                   data={dashboardData.repartition_departements}
@@ -307,29 +399,22 @@ export default function DirecteurDashboardPage() {
           </h3>
           <div className="space-y-3">
             {dashboardData.contrats_expirants.map((contrat) => (
-              <div
-                key={contrat.id}
-                className="flex items-center justify-between bg-white rounded-lg p-4 shadow-sm"
-              >
+              <div key={contrat.id} className="flex items-center justify-between bg-white rounded-lg p-4 shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-medium">
                     {contrat.employe_prenom[0]}{contrat.employe_nom[0]}
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">
-                      {contrat.employe_prenom} {contrat.employe_nom}
-                    </p>
+                    <p className="font-medium text-gray-900">{contrat.employe_prenom} {contrat.employe_nom}</p>
                     <p className="text-sm text-gray-500">Expire le {contrat.date_fin}</p>
                   </div>
                 </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    contrat.jours_restants < 7
-                      ? 'bg-red-100 text-red-700 border border-red-200'
-                      : 'bg-amber-100 text-amber-700 border border-amber-200'
-                  }`}
-                >
-                  {contrat.jours_restants < 7 ? 'URGENT' : ''} {contrat.jours_restants} jours
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  contrat.jours_restants < 7
+                    ? 'bg-red-100 text-red-700 border border-red-200'
+                    : 'bg-amber-100 text-amber-700 border border-amber-200'
+                }`}>
+                  {contrat.jours_restants < 7 ? 'URGENT ' : ''}{contrat.jours_restants} jours
                 </span>
               </div>
             ))}
@@ -339,37 +424,31 @@ export default function DirecteurDashboardPage() {
 
       {/* Activité Récente */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Activité Récente</h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Activité Récente</h3>
+          {aPlus && (
+            <button
+              onClick={() => setShowActiviteModal(true)}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors"
+            >
+              Voir plus ({dashboardData.activite_recente.length})
+            </button>
+          )}
+        </div>
         <div className="space-y-4">
-          {dashboardData.activite_recente.map((activite, index) => (
-            <div key={activite.id} className="flex gap-4">
-              {/* Timeline line */}
-              {index !== dashboardData.activite_recente.length - 1 && (
-                <div className="absolute left-7 top-12 bottom-0 w-px bg-gray-200" style={{ height: 'calc(100% - 48px)' }}></div>
-              )}
-              
-              {/* Avatar */}
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold">
-                  {activite.utilisateur_prenom[0]}{activite.utilisateur_nom[0]}
-                </div>
-              </div>
-              
-              {/* Content */}
-              <div className="flex-1 pb-4">
-                <p className="text-sm text-gray-900">
-                  <span className="font-semibold">{activite.utilisateur_prenom} {activite.utilisateur_nom}</span>{' '}
-                  <span className="text-gray-600">{activite.action}</span>{' '}
-                  <span className="font-medium">{activite.cible}</span>
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formatRelativeTime(activite.date)}
-                </p>
-              </div>
-            </div>
+          {activiteVisible.map((activite) => (
+            <ActiviteItem key={activite.id} activite={activite} />
           ))}
         </div>
       </div>
+
+      {/* Modal */}
+      {showActiviteModal && (
+        <ActiviteModal
+          activites={dashboardData.activite_recente}
+          onClose={() => setShowActiviteModal(false)}
+        />
+      )}
     </div>
   );
 }

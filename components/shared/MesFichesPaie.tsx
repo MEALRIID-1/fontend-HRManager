@@ -8,14 +8,33 @@ import ViewFichePaieModal from '@/components/modals/fiches-paie/ViewFichePaieMod
 import { useState } from 'react';
 
 const fetchMesFichesPaie = async () => {
-  const response = await api.get<{ data: FichePaie[] }>('/fiches-paie/mes-fiches');
-  return response.data.data;
+  const response = await api.get<{ success: boolean; message: string; data: FichePaie[] }>('/fiches-paie/mes-fiches');
+  return response.data.data || [];
 };
 
 const months = [
   'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
 ];
+
+const downloadFichePaiePdf = async (id: number, label: string) => {
+  const response = await api.get(`/fiches-paie/${id}/telecharger`, {
+    responseType: 'blob',
+  });
+
+  const blob = new Blob([response.data], {
+    type: response.headers?.['content-type'] || 'application/pdf',
+  });
+
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = label;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
 
 export default function MesFichesPaie() {
   const [selectedFiche, setSelectedFiche] = useState<FichePaie | null>(null);
@@ -26,12 +45,11 @@ export default function MesFichesPaie() {
   });
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XAF' }).format(amount);
   };
 
   const handleDownload = (fiche: FichePaie) => {
-    // In a real implementation, this would download the PDF
-    console.log('Download PDF for fiche:', fiche.id);
+    downloadFichePaiePdf(fiche.id, `bulletin-paie-${fiche.id}.pdf`);
   };
 
   return (

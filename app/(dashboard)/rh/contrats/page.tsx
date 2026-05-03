@@ -119,7 +119,7 @@ export default function RHContratsPage() {
       header: 'Salaire base',
       render: (contrat: Contrat) => (
         <span className="font-medium text-gray-900">
-          {contrat.salaire_brut ? `${contrat.salaire_brut.toLocaleString()} €` : '-'}
+          {contrat.salaire_brut ? `${contrat.salaire_brut.toLocaleString()} XAF` : '-'}
         </span>
       ),
     },

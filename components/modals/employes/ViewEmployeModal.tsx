@@ -11,7 +11,12 @@ interface ViewEmployeModalProps {
 }
 
 export default function ViewEmployeModal({ isOpen, onClose, employe }: ViewEmployeModalProps) {
-  const getRoleBadge = (role: string) => {
+  // ✅ Sécurisé : vérifie si role existe avant toLowerCase()
+  const getRoleBadge = (role?: string) => {
+    if (!role) {
+      return <span className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-700 rounded-full">-</span>;
+    }
+    
     switch (role.toLowerCase()) {
       case 'admin':
         return <span className="px-3 py-1 text-sm font-medium bg-purple-100 text-purple-700 rounded-full">Admin</span>;
@@ -26,7 +31,11 @@ export default function ViewEmployeModal({ isOpen, onClose, employe }: ViewEmplo
     }
   };
 
-  const getStatutBadge = (statut: string) => {
+  const getStatutBadge = (statut?: string) => {
+    if (!statut) {
+      return <span className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-700 rounded-full">-</span>;
+    }
+    
     switch (statut) {
       case 'actif':
         return <span className="px-3 py-1 text-sm font-medium bg-emerald-100 text-emerald-700 rounded-full">Actif</span>;
@@ -39,6 +48,9 @@ export default function ViewEmployeModal({ isOpen, onClose, employe }: ViewEmplo
     }
   };
 
+  // ✅ Vérification que employe existe
+  if (!employe) return null;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Fiche Employé" size="lg">
       <div className="space-y-6">
@@ -50,10 +62,15 @@ export default function ViewEmployeModal({ isOpen, onClose, employe }: ViewEmplo
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{employe.prenom} {employe.nom}</h2>
             <div className="flex items-center gap-2 mt-2">
-              {employe.roles?.map((role) => (
-                <span key={role.id}>{getRoleBadge(role.slug)}</span>
-              ))}
-              {getStatutBadge(employe.statut || 'actif')}
+              {/* ✅ Utilise uniquement employe.roles, pas role_slug */}
+              {employe.roles && employe.roles.length > 0 ? (
+                employe.roles.map((role) => (
+                  <span key={role.id}>{getRoleBadge(role.slug)}</span>
+                ))
+              ) : (
+                <span className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-700 rounded-full">Aucun rôle</span>
+              )}
+              {getStatutBadge(employe.is_active === false ? 'inactif' : 'actif')}
             </div>
           </div>
         </div>

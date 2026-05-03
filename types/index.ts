@@ -49,7 +49,7 @@ export interface Conge {
   type: 'conge_paye' | 'conge_sans_solde' | 'rtt' | 'maladie' | 'formation';
   date_debut: string;
   date_fin: string;
-  etat: 'en_attente' | 'partiellement_valide' | 'approuve' | 'refuse';
+  statut: 'en_attente' | 'partiellement_valide' | 'approuve' | 'refuse';
   niveau_validation: number;
   motif_refus?: string;
   commentaire?: string;
@@ -88,22 +88,40 @@ export interface Contrat {
   updated_at?: string;
 }
 
+// types/index.ts
+
 export interface FichePaie {
   id: number;
-  employe_id: number;
-  employe?: User;
   mois: number;
   annee: number;
+  periode: string;
+  date_emission?: string;
   salaire_base: number;
-  heures_sup?: number;
-  absences?: number;
-  total_brut: number;
-  total_cotisations: number;
+  heures_sup: number;
+  absences: number;
   net_a_payer: number;
-  statut: 'brouillon' | 'validee' | 'payee';
-  pdf_url?: string;
+  statut: 'brouillon' | 'generee' | 'validee' | 'payee' | 'finalisee';
+  statut_label: string;
+  pdf_url?: string | null;
+  employe?: {
+    id: number;
+    prenom: string;
+    nom: string;
+    matricule?: string;
+    email: string;
+  };
   created_at?: string;
   updated_at?: string;
+}
+
+// Helper pour obtenir le mois depuis periode
+export function getMoisFromPeriode(periode: string): number {
+  return parseInt(periode.split('-')[1]);
+}
+
+// Helper pour obtenir l'année depuis periode
+export function getAnneeFromPeriode(periode: string): number {
+  return parseInt(periode.split('-')[0]);
 }
 
 export interface Notification {

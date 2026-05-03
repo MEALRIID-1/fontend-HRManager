@@ -14,12 +14,12 @@ const fetchNotifications = async (params?: any) => {
 };
 
 const markAsRead = async (id: number) => {
-  const response = await api.put(`/notifications/${id}/read`);
+  const response = await api.post(`/notifications/${id}/mark-as-read`);
   return response.data;
 };
 
 const markAllAsRead = async () => {
-  const response = await api.put('/notifications/read-all');
+  const response = await api.post('/notifications/mark-all-as-read');
   return response.data;
 };
 

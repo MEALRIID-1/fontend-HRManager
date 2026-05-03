@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import Modal from '@/components/shared/Modal';
-import { UserPlus, Upload, Check } from 'lucide-react';
+import { UserPlus, Upload, Check, RefreshCw, Copy } from 'lucide-react';
 import { Role } from '@/types';
 
 const employeSchema = z.object({
@@ -18,7 +18,8 @@ const employeSchema = z.object({
   departement: z.string().min(1, 'Le département est requis'),
   date_embauche: z.string().min(1, 'La date d\'embauche est requise'),
   iban: z.string().optional(),
-  role_slug: z.enum(['rh', 'manager', 'employe', 'admin']),
+  role_slug: z.string().min(1, 'Le rôle est requis'),
+  mot_de_passe: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
 });
 
 type EmployeFormData = z.infer<typeof employeSchema>;
@@ -32,11 +33,13 @@ export default function AddEmployeModal({ isOpen, onClose }: AddEmployeModalProp
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
   
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<EmployeFormData>({
     resolver: zodResolver(employeSchema),
@@ -47,16 +50,29 @@ export default function AddEmployeModal({ isOpen, onClose }: AddEmployeModalProp
 
   const queryClient = useQueryClient();
 
-  const { data: roles = [] } = useQuery({
+  const { data: roles = [], isLoading: rolesLoading } = useQuery({
     queryKey: ['roles'],
     queryFn: async () => {
-      const response = await api.get<{ data: Role[] }>('/parametres/roles');
-      return response.data.data;
+      try {
+        const response = await api.get<{ data: Role[] }>('/roles');
+        console.log('Roles récupérés:', response.data);
+        return response.data.data || [];
+      } catch (error) {
+        console.error('Erreur chargement rôles:', error);
+        // Fallback en cas d'erreur
+        return [
+          { id: 1, nom: 'Admin', slug: 'admin', niveau_hierarchique: 100 },
+          { id: 2, nom: 'RH', slug: 'rh', niveau_hierarchique: 80 },
+          { id: 3, nom: 'Manager', slug: 'manager', niveau_hierarchique: 60 },
+          { id: 4, nom: 'Employé', slug: 'employe', niveau_hierarchique: 40 },
+        ];
+      }
     },
     enabled: isOpen,
   });
 
   const roleOptions = useMemo(() => {
+    if (!roles || roles.length === 0) return [];
     return roles.filter((role) => ['admin', 'rh', 'manager', 'employe'].includes(role.slug));
   }, [roles]);
 
@@ -65,12 +81,27 @@ export default function AddEmployeModal({ isOpen, onClose }: AddEmployeModalProp
       setErrorMessage(null);
       setSuccessMessage(null);
       setPhotoPreview(null);
+      setGeneratedPassword(null);
+      reset({
+        nom: '',
+        prenom: '',
+        email: '',
+        departement: '',
+        date_embauche: '',
+        iban: '',
+        role_slug: 'employe',
+        mot_de_passe: '',
+      });
     }
-  }, [isOpen]);
+  }, [isOpen, reset]);
 
   const createEmploye = useMutation({
     mutationFn: async (data: EmployeFormData) => {
       const selectedRole = roles.find((role) => role.slug === data.role_slug);
+      if (!selectedRole) {
+        throw new Error('Rôle non trouvé');
+      }
+      
       const payload = {
         nom: data.nom,
         prenom: data.prenom,
@@ -78,7 +109,8 @@ export default function AddEmployeModal({ isOpen, onClose }: AddEmployeModalProp
         departement: data.departement,
         date_embauche: data.date_embauche,
         iban: data.iban || null,
-        role_ids: selectedRole ? [selectedRole.id] : [],
+        role_ids: [selectedRole.id],
+        mot_de_passe: data.mot_de_passe,
       };
 
       const response = await api.post('/employes', payload);
@@ -87,16 +119,20 @@ export default function AddEmployeModal({ isOpen, onClose }: AddEmployeModalProp
     onSuccess: () => {
       setErrorMessage(null);
       queryClient.invalidateQueries({ queryKey: ['employes'] });
-      setSuccessMessage('Employé créé. Mot de passe temporaire envoyé par email.');
+      setSuccessMessage('Employé créé avec succès.');
       setTimeout(() => {
         setSuccessMessage(null);
         reset();
         setPhotoPreview(null);
+        setGeneratedPassword(null);
         onClose();
       }, 2000);
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || error?.response?.data?.errors?.role_ids?.[0] || error?.response?.data?.errors?.email?.[0] || 'Impossible de créer l\'employé';
+      const message = error?.response?.data?.message || 
+                     error?.response?.data?.errors?.role_ids?.[0] || 
+                     error?.response?.data?.errors?.email?.[0] || 
+                     'Impossible de créer l\'employé';
       setErrorMessage(message);
     },
   });
@@ -114,6 +150,23 @@ export default function AddEmployeModal({ isOpen, onClose }: AddEmployeModalProp
         setPhotoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const generatePassword = () => {
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    setGeneratedPassword(password);
+    setValue('mot_de_passe', password);
+  };
+
+  const copyPassword = () => {
+    if (generatedPassword) {
+      navigator.clipboard.writeText(generatedPassword);
     }
   };
 
@@ -232,8 +285,10 @@ export default function AddEmployeModal({ isOpen, onClose }: AddEmployeModalProp
               <select
                 {...register('role_slug')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={rolesLoading}
               >
-                {roleOptions.map((role) => (
+                <option value="">Sélectionner un rôle</option>
+                {!rolesLoading && roleOptions.map((role) => (
                   <option key={role.id} value={role.slug}>
                     {role.nom}
                   </option>
@@ -252,6 +307,43 @@ export default function AddEmployeModal({ isOpen, onClose }: AddEmployeModalProp
                 placeholder="FR76..."
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Mot de passe <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <input
+                  {...register('mot_de_passe')}
+                  type="text"
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Générer un mot de passe..."
+                  readOnly
+                />
+                {generatedPassword && (
+                  <button
+                    type="button"
+                    onClick={copyPassword}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    title="Copier"
+                  >
+                    <Copy size={16} />
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={generatePassword}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+                title="Générer un mot de passe"
+              >
+                <RefreshCw size={16} />
+                Générer
+              </button>
+            </div>
+            {errors.mot_de_passe && <p className="text-red-500 text-xs mt-1">{errors.mot_de_passe.message}</p>}
           </div>
 
           <div className="flex gap-3 justify-end pt-4">

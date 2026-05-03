@@ -52,8 +52,11 @@ export const useValidateConge = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, commentaire }: { id: number; commentaire?: string }) => {
-      const response = await api.post<ApiResponse<Conge>>(`${API_PATH}/${id}/valider`, { commentaire });
+    mutationFn: async ({ id, decision, motif, commentaire }: { id: number; decision?: 'approuve' | 'refuse'; motif?: string; commentaire?: string }) => {
+      const response = await api.post<ApiResponse<Conge>>(`${API_PATH}/${id}/valider`, {
+        decision: decision || 'approuve',
+        motif: motif || commentaire || 'Validé par le manager (N1)',
+      });
       return response.data.data;
     },
     onSuccess: (_, variables) => {

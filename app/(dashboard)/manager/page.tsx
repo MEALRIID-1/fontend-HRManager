@@ -107,7 +107,10 @@ export default function ManagerDashboardPage() {
     ],
   };
 
-  const dashboardData = data || demoData;
+  const dashboardData = data && data.stats ? data : demoData;
+  const stats = dashboardData?.stats ?? demoData.stats;
+  const equipe = Array.isArray(dashboardData?.equipe) ? dashboardData.equipe : demoData.equipe;
+  const congesN1Attente = Array.isArray(dashboardData?.conges_n1_attente) ? dashboardData.conges_n1_attente : demoData.conges_n1_attente;
 
   if (isLoading) {
     return (
@@ -126,8 +129,6 @@ export default function ManagerDashboardPage() {
       </div>
     );
   }
-
-  const stats = dashboardData.stats;
 
   const statCards = [
     {
@@ -190,10 +191,10 @@ export default function ManagerDashboardPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Users size={20} className="text-blue-600" />
-            Mon Équipe ({dashboardData.equipe.length} membres)
+            Mon Équipe ({equipe.length} membres)
           </h3>
           <div className="space-y-2 max-h-80 overflow-y-auto">
-            {dashboardData.equipe.map((membre) => {
+            {equipe.map((membre) => {
               const badge = getStatutBadge(membre.statut);
               return (
                 <div key={membre.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
@@ -221,7 +222,7 @@ export default function ManagerDashboardPage() {
             Congés à valider (Validation N1)
           </h3>
           <div className="space-y-3 max-h-80 overflow-y-auto">
-            {dashboardData.conges_n1_attente.map((conge) => (
+            {congesN1Attente.map((conge) => (
               <div key={conge.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-medium text-sm">

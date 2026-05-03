@@ -124,7 +124,7 @@ export default function ManagerContratsPage() {
                       {contrat.salaire_base && (
                         <div className="flex items-center gap-2 text-gray-600">
                           <DollarSign size={14} />
-                          <span>{contrat.salaire_base.toLocaleString()} €</span>
+                          <span>{contrat.salaire_base.toLocaleString()} XAF</span>
                         </div>
                       )}
                     </div>

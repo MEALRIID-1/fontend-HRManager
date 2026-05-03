@@ -17,7 +17,7 @@ const generateEmployesReport = async (filters: any) => {
 };
 
 const exportPDF = async (filters: any) => {
-  const response = await api.get('/rapports/export-pdf', {
+  const response = await api.get('/rapports/employes/export-pdf', {
     params: { type: 'employes', ...filters },
     responseType: 'blob',
   });
@@ -25,7 +25,7 @@ const exportPDF = async (filters: any) => {
 };
 
 const exportExcel = async (filters: any) => {
-  const response = await api.get('/rapports/export-excel', {
+  const response = await api.get('/rapports/employes/export-excel', {
     params: { type: 'employes', ...filters },
     responseType: 'blob',
   });
@@ -81,7 +81,7 @@ export default function ReportEmployesTab() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'rapport_employes.xlsx';
+    a.download = 'rapport_employes.csv';
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -90,12 +90,14 @@ export default function ReportEmployesTab() {
 
   const reportData = generateMutation.data;
   const isLoading = generateMutation.isPending;
+  const reportPayload = reportData?.data ?? null;
 
-  const stats = reportData?.stats || {
+  const stats = reportPayload?.statistiques || {
     total_actifs: 0,
     nouveaux_ce_mois: 0,
     departs_ce_mois: 0,
   };
+  const employes = Array.isArray(reportPayload?.employes) ? reportPayload.employes : [];
 
   return (
     <div className="space-y-6">
@@ -261,7 +263,7 @@ export default function ReportEmployesTab() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {reportData?.data?.map((item: any) => (
+                  {employes.map((item: any) => (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {item.prenom} {item.nom}
@@ -276,7 +278,7 @@ export default function ReportEmployesTab() {
                         {item.date_embauche || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.salaire ? `${item.salaire.toLocaleString()} €` : '-'}
+                        {item.salaire ? `${item.salaire.toLocaleString()} XAF` : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <StatusBadge status={item.is_active ? 'actif' : 'inactif'} size="sm" />

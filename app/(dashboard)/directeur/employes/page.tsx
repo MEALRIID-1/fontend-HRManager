@@ -47,6 +47,7 @@ export default function DirecteurEmployesPage() {
       role: filterRole,
       statut: filterStatut,
     }),
+
   });
 
   const queryClient = useQueryClient();

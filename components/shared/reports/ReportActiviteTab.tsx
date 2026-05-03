@@ -7,7 +7,7 @@ import { Download, Activity, Loader2, Clock, Shield } from 'lucide-react';
 import StatusBadge from '@/components/shared/StatusBadge';
 
 const fetchUsers = async () => {
-  const response = await api.get<{ data: any[] }>('/users', { params: { per_page: 100 } });
+  const response = await api.get<{ data: any[] }>('/employes', { params: { per_page: 100 } });
   return response.data.data;
 };
 
@@ -17,7 +17,7 @@ const generateActiviteReport = async (filters: any) => {
 };
 
 const exportPDF = async (filters: any) => {
-  const response = await api.get('/rapports/export-pdf', {
+  const response = await api.get('/rapports/activite/export-pdf', {
     params: { type: 'activite', ...filters },
     responseType: 'blob',
   });
@@ -25,7 +25,7 @@ const exportPDF = async (filters: any) => {
 };
 
 const exportExcel = async (filters: any) => {
-  const response = await api.get('/rapports/export-excel', {
+  const response = await api.get('/rapports/activite/export-excel', {
     params: { type: 'activite', ...filters },
     responseType: 'blob',
   });
@@ -80,7 +80,7 @@ export default function ReportActiviteTab() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'rapport_activite.xlsx';
+    a.download = 'rapport_activite.csv';
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -89,6 +89,8 @@ export default function ReportActiviteTab() {
 
   const reportData = generateMutation.data;
   const isLoading = generateMutation.isPending;
+  const reportPayload = reportData?.data ?? null;
+  const activites = Array.isArray(reportPayload?.activites) ? reportPayload.activites : [];
 
   return (
     <div className="space-y-6">
@@ -206,7 +208,7 @@ export default function ReportActiviteTab() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {reportData?.data?.map((item: any) => (
+                  {activites.map((item: any) => (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {item.user?.prenom} {item.user?.nom}

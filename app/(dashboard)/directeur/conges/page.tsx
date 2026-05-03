@@ -95,8 +95,8 @@ export default function DirecteurCongesPage() {
     }
   };
 
-  const getStatutBadge = (etat: string) => {
-    switch (etat) {
+  const getStatutBadge = (statut: string) => {
+    switch (statut) {
       case 'approuve':
         return <span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full">Approuvé</span>;
       case 'en_attente':
@@ -106,7 +106,7 @@ export default function DirecteurCongesPage() {
       case 'refuse':
         return <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">Refusé</span>;
       default:
-        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">{etat}</span>;
+        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">{statut}</span>;
     }
   };
 
@@ -186,7 +186,7 @@ export default function DirecteurCongesPage() {
     {
       key: 'statut',
       header: 'Statut',
-      render: (conge: Conge) => getStatutBadge(conge.etat),
+      render: (conge: Conge) => getStatutBadge(conge.statut),
     },
     {
       key: 'validations',
@@ -205,7 +205,7 @@ export default function DirecteurCongesPage() {
           >
             <Eye size={18} />
           </button>
-          {(conge.etat === 'en_attente' || conge.etat === 'partiellement_valide') && (
+          {(conge.statut === 'en_attente' || conge.statut === 'partiellement_valide') && (
             <>
               <button
                 onClick={() => handleValider(conge)}

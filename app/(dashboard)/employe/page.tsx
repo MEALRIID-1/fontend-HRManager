@@ -170,7 +170,15 @@ export default function EmployeDashboardPage() {
     ],
   };
 
-  const dashboardData = data || demoData;
+  const dashboardData: EmployeDashboardData = {
+    ...demoData,
+    ...(data || {}),
+    jours_conge: data?.jours_conge ?? demoData.jours_conge,
+    contrat: data?.contrat ?? demoData.contrat,
+    prochains_conges: data?.prochains_conges ?? demoData.prochains_conges,
+    dernieres_demandes: data?.dernieres_demandes ?? demoData.dernieres_demandes,
+    demandes_en_cours: data?.demandes_en_cours ?? demoData.demandes_en_cours,
+  };
 
   if (isLoading) {
     return (

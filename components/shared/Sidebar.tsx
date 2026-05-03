@@ -62,8 +62,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { href: '/manager/contrats', label: 'Contrats', icon: <FileText size={20} />, roles: ['manager'] },
     { href: '/employe/contrat', label: 'Mon Contrat', icon: <FileText size={20} />, roles: ['employe'] },
     
-    // Fiches de paie (all except employe has different label)
-    { href: '/directeur/fiches-paie', label: 'Fiches de paie', icon: <CreditCard size={20} />, roles: ['admin', 'rh', 'manager'] },
+    // Fiches de paie (admin and RH only)
+    { href: '/rh/fiches-paie', label: 'Fiches de paie', icon: <CreditCard size={20} />, roles: ['admin', 'rh'] },
     
     // Notifications (all roles with badge)
     { href: '/directeur/notifications', label: 'Notifications', icon: <Bell size={20} />, roles: ['admin'], badge: unreadCount },
@@ -102,7 +102,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     // Check if user has any of the required roles
     const hasRole = item.roles.some(requiredRole => {
       const normalizedRequired = requiredRole.toLowerCase();
-      return userRoles.some(userRole => userRole === normalizedRequired || userRole.includes(normalizedRequired));
+      if (userRole === normalizedRequired) return true;
+      return userRoles.some(ur => ur === normalizedRequired || ur.includes(normalizedRequired));
     });
     
     if (!hasRole) return false;
@@ -153,7 +154,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               let href = item.href;
               
               // For role-specific paths, replace the role part with the real route segment.
-              if (userRole && (item.href.includes('/notifications') || item.href.includes('/rapports') || item.href.includes('/employes') || item.href.includes('/conges') || item.href.includes('/contrats'))) {
+              if (userRole && (item.href.includes('/notifications') || item.href.includes('/rapports') || item.href.includes('/employes') || item.href.includes('/conges') || item.href.includes('/contrats') || item.href.includes('/fiches-paie'))) {
                 const roleMatch = /\/(admin|directeur|rh|manager|employe)\//.exec(item.href);
                 if (roleMatch) {
                   href = item.href.replace(roleMatch[0], `/${routeRole}/`);

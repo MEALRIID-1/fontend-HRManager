@@ -3,6 +3,7 @@
 import { Printer, Download, FileText, Building, MapPin, DollarSign, Calendar } from 'lucide-react';
 import Modal from '@/components/shared/Modal';
 import { Contrat } from '@/types';
+import api from '@/lib/api';
 
 interface ViewContratModalProps {
   isOpen: boolean;
@@ -32,10 +33,15 @@ export default function ViewContratModal({ isOpen, onClose, contrat, isAdmin = t
   };
 
   const handleDownload = async () => {
-    // Appel API pour télécharger le PDF
+    if (!contrat?.id) return;
+    
     try {
-      const response = await fetch(`/api/contrats/${contrat.id}/telecharger`);
-      const blob = await response.blob();
+      // ✅ Appel API pour télécharger le PDF généré par le backend
+      const response = await api.get(`/contrats/${contrat.id}/telecharger`, {
+        responseType: 'blob',
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -46,6 +52,7 @@ export default function ViewContratModal({ isOpen, onClose, contrat, isAdmin = t
       document.body.removeChild(a);
     } catch (error) {
       console.error('Erreur téléchargement PDF:', error);
+      alert('Erreur lors du téléchargement du PDF');
     }
   };
 
@@ -55,31 +62,35 @@ export default function ViewContratModal({ isOpen, onClose, contrat, isAdmin = t
         <div className="bg-white border-2 border-gray-300 p-8 shadow-lg max-w-4xl mx-auto" id="contract-preview">
           {/* En-tête */}
           <div className="border-b-2 border-gray-300 pb-6 mb-6">
-            <div className="flex items-center gap-4 mb-4">
-              <Building className="text-blue-600" size={32} />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">HRManager</h1>
-                <p className="text-sm text-gray-500">Solutions de Gestion RH</p>
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-4 mb-4">
+                <Building className="text-blue-600" size={32} />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">HRManager</h1>
+                  <p className="text-sm text-gray-500">Solutions de Gestion RH</p>
+                </div>
               </div>
-            </div>
-            <div className="text-sm text-gray-600">
-              <p>123 Avenue des Technologies</p>
-              <p>75000 Paris</p>
-              <p>Tél: +33 1 23 45 67 89</p>
-              <p>Email: contact@hrmanager.com</p>
+              <div className="text-sm text-gray-600 text-center">
+                <p>123 Avenue des Technologies</p>
+                <p>75000 Douala-Cameroun</p>
+                <p>Tél: +33 1 23 45 67 89</p>
+                <p>Email: contact@hrmanager.com</p>
+              </div>
             </div>
           </div>
 
           {/* Destinataire */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500 mb-1">À l'attention de :</p>
-            <p className="text-lg font-semibold text-gray-900">
-              M./Mme {contrat.employe?.prenom} {contrat.employe?.nom}
-            </p>
-            <p className="text-sm text-gray-600">{contrat.employe?.email}</p>
-            <p className="text-sm text-gray-600">{contrat.departement || 'Département non spécifié'}</p>
+          <div className="flex justify-end">
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-500 mb-1">À l'attention de :</p>
+              <p className="text-lg font-semibold text-gray-900">
+                M./Mme {contrat.employe?.prenom} {contrat.employe?.nom}
+              </p>
+              <p className="text-sm text-gray-600">{contrat.employe?.email}</p>
+              <p className="text-sm text-gray-600">{contrat.departement || 'Département non spécifié'}</p>
+            </div>
           </div>
-
+          
           {/* Objet */}
           <div className="mb-6">
             <p className="text-sm text-gray-500 mb-1">Objet :</p>
@@ -88,11 +99,9 @@ export default function ViewContratModal({ isOpen, onClose, contrat, isAdmin = t
 
           {/* Corps du contrat */}
           <div className="space-y-4 text-gray-700 leading-relaxed">
-            <p className="text-sm text-gray-500">Paris, le {formatDate(contrat.date_debut)}</p>
+            <p className="text-sm text-gray-500">Douala, le {formatDate(contrat.date_debut)}</p>
 
-            <p>
-              Madame, Monsieur,
-            </p>
+            <p>Madame, Monsieur,</p>
 
             <p>
               En référence à nos échanges et suite à votre recrutement au sein de notre entreprise, nous avons le plaisir de vous confirmer votre engagement selon les modalités ci-dessous :
@@ -127,7 +136,7 @@ export default function ViewContratModal({ isOpen, onClose, contrat, isAdmin = t
                 <div className="flex items-start gap-2">
                   <DollarSign size={16} className="mt-0.5 text-gray-500" />
                   <div>
-                    <span className="font-medium">Salaire brut mensuel :</span> {contrat.salaire_brut ? `${contrat.salaire_brut.toLocaleString()} €` : 'Non spécifié'}
+                    <span className="font-medium">Salaire brut mensuel :</span> {contrat.salaire_brut ? `${contrat.salaire_brut.toLocaleString()} XAF` : 'Non spécifié'}
                   </div>
                 </div>
               </div>
@@ -147,7 +156,7 @@ export default function ViewContratModal({ isOpen, onClose, contrat, isAdmin = t
 
             <h3 className="font-semibold text-gray-900 mt-6 mb-3">Article 3 - Lieu de travail</h3>
             <p>
-              Votre lieu de travail est situé à nos bureaux de Paris, ou tout autre lieu désigné par la direction dans le cadre de vos fonctions.
+              Votre lieu de travail est situé à nos bureaux de Douala, ou tout autre lieu désigné par la direction dans le cadre de vos fonctions.
             </p>
 
             <h3 className="font-semibold text-gray-900 mt-6 mb-3">Article 4 - Durée du travail</h3>
@@ -157,7 +166,7 @@ export default function ViewContratModal({ isOpen, onClose, contrat, isAdmin = t
 
             <h3 className="font-semibold text-gray-900 mt-6 mb-3">Article 5 - Rémunération</h3>
             <p>
-              En contrepartie de votre travail, vous percevrez un salaire brut mensuel de {contrat.salaire_brut ? `${contrat.salaire_brut.toLocaleString()} €` : '[à définir]'}.
+              En contrepartie de votre travail, vous percevrez un salaire brut mensuel de {contrat.salaire_brut ? `${contrat.salaire_brut.toLocaleString()} XAF` : '[à définir]'}.
               Ce salaire sera versé mensuellement à terme échu, sous déduction des cotisations sociales légales.
             </p>
 
@@ -172,9 +181,9 @@ export default function ViewContratModal({ isOpen, onClose, contrat, isAdmin = t
             </p>
 
             <h3 className="font-semibold text-gray-900 mt-6 mb-3">Article 8 - Clause de non-concurrence</h3>
-              <p>
-                Pendant la durée de votre contrat et pour une période de 6 mois après sa cessation, vous vous interdirez, sans l'autorisation écrite de l'entreprise, d'exercer une activité concurrente ou de travailler pour une entreprise concurrente.
-              </p>
+            <p>
+              Pendant la durée de votre contrat et pour une période de 6 mois après sa cessation, vous vous interdirez, sans l'autorisation écrite de l'entreprise, d'exercer une activité concurrente ou de travailler pour une entreprise concurrente.
+            </p>
 
             <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-sm text-gray-600">

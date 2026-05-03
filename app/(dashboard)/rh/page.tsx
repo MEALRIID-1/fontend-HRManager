@@ -109,7 +109,7 @@ export default function RHDashboardPage() {
     );
   }
 
-  const stats = dashboardData.stats;
+  const stats = dashboardData?.stats ?? demoData.stats;
 
   const statCards = [
     {
@@ -176,7 +176,7 @@ export default function RHDashboardPage() {
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dashboardData.evolution_embauches}>
+              <LineChart data={dashboardData?.evolution_embauches ?? demoData.evolution_embauches}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="mois" tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={{ stroke: '#E5E7EB' }} />
                 <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={{ stroke: '#E5E7EB' }} />
@@ -197,7 +197,7 @@ export default function RHDashboardPage() {
             Congés à valider (Validation N2)
           </h3>
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {dashboardData.conges_n2_attente.map((conge) => (
+            {(dashboardData?.conges_n2_attente ?? demoData.conges_n2_attente).map((conge) => (
               <div key={conge.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-medium text-sm">
