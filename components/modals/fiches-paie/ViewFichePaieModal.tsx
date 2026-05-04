@@ -54,7 +54,7 @@ export default function ViewFichePaieModal({ isOpen, onClose, fiche }: ViewFiche
         responseType: 'blob',
       });
 
-      const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/pdf' });
+      const blob = new Blob([response.data], { type: String(response.headers['content-type'] || 'application/pdf') });
 
       // Try to extract filename from content-disposition header
       let filename = `bulletin-paie-${fiche.periode || fiche.id}.pdf`;
@@ -99,7 +99,7 @@ export default function ViewFichePaieModal({ isOpen, onClose, fiche }: ViewFiche
   const net_a_payer = ficheData.net_a_payer || 0;
   const heures_sup = ficheData.heures_sup || 0;
   const absences = ficheData.absences || 0;
-  const employe = ficheData.employe || {};
+  const employe = ficheData.employe || ({} as import('@/types').User);
 
   // Calculs
   const cotisations = salaire_base * 0.23;

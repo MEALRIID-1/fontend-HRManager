@@ -65,9 +65,9 @@ export default function ViewCongeModal({ isOpen, onClose, conge }: ViewCongeModa
           <div className="p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-500 mb-1">Statut</p>
             <div className="flex items-center gap-2">
-              {getStatusIcon(conge.etat)}
-              <span className={`px-2 py-1 rounded-full text-sm font-medium ${getStatusClass(conge.etat)}`}>
-                {getStatusText(conge.etat)}
+              {getStatusIcon(conge.statut)}
+              <span className={`px-2 py-1 rounded-full text-sm font-medium ${getStatusClass(conge.statut)}`}>
+                {getStatusText(conge.statut)}
               </span>
             </div>
           </div>

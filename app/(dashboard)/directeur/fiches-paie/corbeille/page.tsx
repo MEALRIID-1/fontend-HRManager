@@ -67,7 +67,7 @@ export default function DirecteurFichesPaieCorbeillePage() {
     if (fiche.employe?.prenom || fiche.employe?.nom) {
       return `${fiche.employe?.prenom ?? ''} ${fiche.employe?.nom ?? ''}`.trim();
     }
-    return fiche.employe?.name ?? 'Employé';
+    return 'Employé';
   };
 
   const formatCurrency = (amount: number) => {

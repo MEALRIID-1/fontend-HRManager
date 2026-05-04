@@ -71,7 +71,7 @@ export default function ViewCongeModal({ isOpen, onClose, conge }: ViewCongeModa
               <p className="text-sm text-gray-500">{conge.employe?.email}</p>
             </div>
           </div>
-          {getStatutBadge(conge.etat)}
+          {getStatutBadge(conge.statut)}
         </div>
 
         {/* Détails du congé */}

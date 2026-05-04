@@ -8,7 +8,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import AddContratModal from '@/components/modals/contrats/AddContratModal';
 import ViewContratModal from '@/components/modals/contrats/ViewContratModal';
-import { FileText, AlertTriangle, Filter, Search, Download, Printer, Trash2 } from 'lucide-react';
+import { FileText, AlertTriangle, Filter, Search, Download, Printer } from 'lucide-react';
 import { Contrat } from '@/types';
 
 const fetchContrats = async (params?: any) => {
@@ -46,7 +46,7 @@ export default function DirecteurContratsPage() {
       });
 
       const blob = new Blob([response.data], {
-        type: response.headers?.['content-type'] || 'application/pdf',
+        type: String(response.headers?.['content-type'] || 'application/pdf'),
       });
 
       const url = window.URL.createObjectURL(blob);

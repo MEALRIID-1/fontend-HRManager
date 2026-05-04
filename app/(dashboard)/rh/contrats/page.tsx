@@ -46,7 +46,7 @@ export default function RHContratsPage() {
       });
 
       const blob = new Blob([response.data], {
-        type: response.headers?.['content-type'] || 'application/pdf',
+        type: String(response.headers?.['content-type'] || 'application/pdf'),
       });
 
       const url = window.URL.createObjectURL(blob);

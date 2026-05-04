@@ -125,7 +125,7 @@ export default function CorbeilleCongesPage() {
     {
       key: 'statut',
       header: 'Statut',
-      render: (conge: Conge) => getStatutBadge(conge.etat),
+      render: (conge: Conge) => getStatutBadge(conge.statut),
     },
     {
       key: 'actions',
